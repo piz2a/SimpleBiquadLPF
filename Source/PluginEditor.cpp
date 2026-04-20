@@ -3,7 +3,7 @@
 
 //==============================================================================
 // CONSTRUCTOR
-SimpleLinearFilterAudioProcessorEditor::SimpleLinearFilterAudioProcessorEditor (SimpleLinearFilterAudioProcessor& p)
+SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor (SimpleFilterAudioProcessor& p)
     : AudioProcessorEditor (&p),audioProcessor (p),
       freqSliderAttachment(audioProcessor.getState(), "freqHz", frequencySlider),
       playButtonAttachment(audioProcessor.getState(), "play", playButton),
@@ -73,12 +73,12 @@ SimpleLinearFilterAudioProcessorEditor::SimpleLinearFilterAudioProcessorEditor (
 }
 
 // DECONSTRUCTOR
-SimpleLinearFilterAudioProcessorEditor::~SimpleLinearFilterAudioProcessorEditor()
+SimpleFilterAudioProcessorEditor::~SimpleFilterAudioProcessorEditor()
 {
 }
 
 //==============================================================================
-void SimpleLinearFilterAudioProcessorEditor::paint (juce::Graphics& g)
+void SimpleFilterAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (juce::Colours::black);  // (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
@@ -88,7 +88,7 @@ void SimpleLinearFilterAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawFittedText ("Midi Volume", 0, 0, getWidth(), 30, juce::Justification::centred, 1);
 }
 
-void SimpleLinearFilterAudioProcessorEditor::resized()
+void SimpleFilterAudioProcessorEditor::resized()
 {
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
@@ -103,7 +103,7 @@ void SimpleLinearFilterAudioProcessorEditor::resized()
     playButton.setBounds(getWidth() - 120, 30, 100, 30);
 }
 
-void SimpleLinearFilterAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
+void SimpleFilterAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
 {
     audioProcessor.noteOnVel = midiVolume.getValue();
 }

@@ -7,11 +7,11 @@
 //==============================================================================
 /**
 */
-class SimpleLinearFilterAudioProcessorEditor  : public juce::AudioProcessorEditor, private juce::Slider::Listener  // [2]
+class SimpleFilterAudioProcessorEditor  : public juce::AudioProcessorEditor, private juce::Slider::Listener  // [2]
 {
 public:
-    SimpleLinearFilterAudioProcessorEditor (SimpleLinearFilterAudioProcessor&);
-    ~SimpleLinearFilterAudioProcessorEditor() override;
+    SimpleFilterAudioProcessorEditor (SimpleFilterAudioProcessor&);
+    ~SimpleFilterAudioProcessorEditor() override;
 
     //==============================================================================
     void paint (juce::Graphics&) override;
@@ -21,7 +21,7 @@ public:
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
-    SimpleLinearFilterAudioProcessor& audioProcessor;
+    SimpleFilterAudioProcessor& audioProcessor;
     juce::WebBrowserComponent webComponent;
 
     Square square;
@@ -32,5 +32,5 @@ private:
     juce::AudioProcessorValueTreeState::SliderAttachment freqSliderAttachment;
     juce::AudioProcessorValueTreeState::ButtonAttachment playButtonAttachment;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleLinearFilterAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleFilterAudioProcessorEditor)
 };

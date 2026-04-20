@@ -3,17 +3,18 @@
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "SineWaveChannel.h"
+#include "SimpleFilterChannel.h"
 
 //==============================================================================
 /**
 */
-class SimpleLinearFilterAudioProcessor  : public juce::AudioProcessor
+class SimpleFilterAudioProcessor  : public juce::AudioProcessor
 {
 public:
     float noteOnVel;
     //==============================================================================
-    SimpleLinearFilterAudioProcessor();
-    ~SimpleLinearFilterAudioProcessor() override;
+    SimpleFilterAudioProcessor();
+    ~SimpleFilterAudioProcessor() override;
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -52,10 +53,11 @@ public:
 
 private:
     std::vector<SineWaveChannel> sineWaves;
+    SimpleFilterChannel filter;
     juce::AudioProcessorValueTreeState state;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
     std::atomic<float>* frequencyParam;
     std::atomic<float>* playParam;
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleLinearFilterAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleFilterAudioProcessor)
 };

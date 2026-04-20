@@ -2,7 +2,7 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-SimpleLinearFilterAudioProcessor::SimpleLinearFilterAudioProcessor()
+SimpleFilterAudioProcessor::SimpleFilterAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
@@ -16,17 +16,17 @@ SimpleLinearFilterAudioProcessor::SimpleLinearFilterAudioProcessor()
 {
 }
 
-SimpleLinearFilterAudioProcessor::~SimpleLinearFilterAudioProcessor()
+SimpleFilterAudioProcessor::~SimpleFilterAudioProcessor()
 {
 }
 
 //==============================================================================
-const juce::String SimpleLinearFilterAudioProcessor::getName() const
+const juce::String SimpleFilterAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool SimpleLinearFilterAudioProcessor::acceptsMidi() const
+bool SimpleFilterAudioProcessor::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -35,7 +35,7 @@ bool SimpleLinearFilterAudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool SimpleLinearFilterAudioProcessor::producesMidi() const
+bool SimpleFilterAudioProcessor::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -44,7 +44,7 @@ bool SimpleLinearFilterAudioProcessor::producesMidi() const
    #endif
 }
 
-bool SimpleLinearFilterAudioProcessor::isMidiEffect() const
+bool SimpleFilterAudioProcessor::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -53,37 +53,37 @@ bool SimpleLinearFilterAudioProcessor::isMidiEffect() const
    #endif
 }
 
-double SimpleLinearFilterAudioProcessor::getTailLengthSeconds() const
+double SimpleFilterAudioProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int SimpleLinearFilterAudioProcessor::getNumPrograms()
+int SimpleFilterAudioProcessor::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
                 // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int SimpleLinearFilterAudioProcessor::getCurrentProgram()
+int SimpleFilterAudioProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void SimpleLinearFilterAudioProcessor::setCurrentProgram (int index)
+void SimpleFilterAudioProcessor::setCurrentProgram (int index)
 {
 }
 
-const juce::String SimpleLinearFilterAudioProcessor::getProgramName (int index)
+const juce::String SimpleFilterAudioProcessor::getProgramName (int index)
 {
     return {};
 }
 
-void SimpleLinearFilterAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void SimpleFilterAudioProcessor::changeProgramName (int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void SimpleLinearFilterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void SimpleFilterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
@@ -92,18 +92,22 @@ void SimpleLinearFilterAudioProcessor::prepareToPlay (double sampleRate, int sam
         wave.prepare(sampleRate);
     }
 
+    filter.prepare(sampleRate);
+    filter.setCutoffFrequency(1000.0f);
+    filter.setQ(0.707f);
+
     frequencyParam = state.getRawParameterValue("freqHz");
     playParam = state.getRawParameterValue("play");
 }
 
-void SimpleLinearFilterAudioProcessor::releaseResources()
+void SimpleFilterAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool SimpleLinearFilterAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool SimpleFilterAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
@@ -128,7 +132,7 @@ bool SimpleLinearFilterAudioProcessor::isBusesLayoutSupported (const BusesLayout
 }
 #endif
 
-void SimpleLinearFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void SimpleFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -145,12 +149,14 @@ void SimpleLinearFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& b
 
     const float freq = frequencyParam->load();
     const bool shouldBePlaying = static_cast<bool>(playParam->load());
-    
+
     for (int channel = 0; channel < buffer.getNumChannels(); ++channel) {
         auto* output = buffer.getWritePointer(channel);
         sineWaves[channel].setFrequency(freq);
         sineWaves[channel].setAmplitude(shouldBePlaying ? 0.4f : 0.0f);
         sineWaves[channel].process(output, buffer.getNumSamples());
+
+        filter.process(output, buffer.getNumSamples());
     }
 
     // This is the place where you'd normally do the guts of your plugin's
@@ -168,25 +174,25 @@ void SimpleLinearFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& b
 }
 
 //==============================================================================
-bool SimpleLinearFilterAudioProcessor::hasEditor() const
+bool SimpleFilterAudioProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* SimpleLinearFilterAudioProcessor::createEditor()
+juce::AudioProcessorEditor* SimpleFilterAudioProcessor::createEditor()
 {
-    return new SimpleLinearFilterAudioProcessorEditor (*this);
+    return new SimpleFilterAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void SimpleLinearFilterAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void SimpleFilterAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
 }
 
-void SimpleLinearFilterAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void SimpleFilterAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
@@ -196,10 +202,10 @@ void SimpleLinearFilterAudioProcessor::setStateInformation (const void* data, in
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new SimpleLinearFilterAudioProcessor();
+    return new SimpleFilterAudioProcessor();
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout SimpleLinearFilterAudioProcessor::createParameters()
+juce::AudioProcessorValueTreeState::ParameterLayout SimpleFilterAudioProcessor::createParameters()
 {
     return {
         std::make_unique<juce::AudioParameterFloat> (  // why use make_unique? because the createParameters function needs to return a ParameterLayout object, which is a vector of unique pointers to RangedAudioParameter objects. By using make_unique, we can create a new AudioParameterFloat object and automatically wrap it in a unique pointer, which is then added to the ParameterLayout vector.

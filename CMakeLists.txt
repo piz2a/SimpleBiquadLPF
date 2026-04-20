@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15...4.2) # 최신 CMake 호환성 확보
-project(SimpleLinearFilter VERSION 0.0.1)
+project(SimpleFilter VERSION 0.0.1)
 # JUCE의 안전 장치를 전역 수준에서 강제로 꺼버립니다.
 add_compile_definitions(JUCE_VST3_CAN_REPLACE_VST2=0)
 
@@ -7,7 +7,7 @@ add_compile_definitions(JUCE_VST3_CAN_REPLACE_VST2=0)
 add_subdirectory(../JUCE bin/JUCE)
 
 # 2. 오디오 플러그인 타겟 생성
-juce_add_plugin(SimpleLinearFilter
+juce_add_plugin(SimpleFilter
     COMPANY_NAME "Jihoaudio"           # 지호님의 회사/브랜드명
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE             
@@ -21,13 +21,13 @@ juce_add_plugin(SimpleLinearFilter
 )
 
 # 3. 소스 파일 등록 (.jucer에 있던 파일들)
-target_sources(SimpleLinearFilter PRIVATE
+target_sources(SimpleFilter PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginProcessor.h
     Source/PluginEditor.cpp
     Source/PluginEditor.h
-    Source/SineWave.cpp
-    Source/SineWave.h
+    Source/SimpleFilterChannel.cpp
+    Source/SimpleFilterChannel.h
     Source/SineWaveChannel.cpp
     Source/SineWaveChannel.h
     Source/Square.cpp
@@ -35,7 +35,7 @@ target_sources(SimpleLinearFilter PRIVATE
 )
 
 # 4. 사용 중인 JUCE 모듈 링크
-target_link_libraries(SimpleLinearFilter PRIVATE
+target_link_libraries(SimpleFilter PRIVATE
     juce::juce_audio_utils
     juce::juce_audio_processors
     juce::juce_gui_extra
@@ -47,9 +47,9 @@ target_link_libraries(SimpleLinearFilter PRIVATE
 )
 
 # 5. C++ 표준 설정
-target_compile_features(SimpleLinearFilter PRIVATE cxx_std_20)
+target_compile_features(SimpleFilter PRIVATE cxx_std_20)
 
 # 6. 컴파일러 설정 (Clang 17의 엄격한 경고 해결)
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(SimpleLinearFilter PRIVATE -Wno-error -Wno-reserved-identifier)
+    target_compile_options(SimpleFilter PRIVATE -Wno-error -Wno-reserved-identifier)
 endif()
