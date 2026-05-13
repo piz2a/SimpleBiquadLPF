@@ -1,2 +1,28 @@
 build
 **/.DS_Store
+
+# Logs
+ui/logs
+ui/*.log
+ui/npm-debug.log*
+ui/yarn-debug.log*
+ui/yarn-error.log*
+ui/pnpm-debug.log*
+ui/lerna-debug.log*
+
+ui/node_modules
+ui/dist
+ui/dist-ssr
+ui/*.local
+
+# Editor directories and files
+.vscode
+ui/.vscode
+!.vscode/extensions.json
+!.vscode/launch.json
+ui/.idea
+ui/*.suo
+ui/*.ntvs*
+ui/*.njsproj
+ui/*.sln
+ui/*.sw?
