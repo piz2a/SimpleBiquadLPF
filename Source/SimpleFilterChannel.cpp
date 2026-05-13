@@ -4,8 +4,7 @@ void SimpleFilterChannel::setCoefficients()
 {
     // Biquad LPF
     // setCoefficients 내부
-    float safeCutoff = std::min(cutoffFrequency, currentSampleRate * 0.45f); // 약 20kHz로 제한
-    const float w0 = 2.0f * juce::MathConstants<float>::pi * safeCutoff / currentSampleRate;
+    const float w0 = 2.0f * juce::MathConstants<float>::pi * cutoffFrequency / currentSampleRate;
     const float alpha = std::sin(w0) / (2.0f * q);
     const float a_0 = 1.0f + alpha;
     b_1 = (1.0f - std::cos(w0)) / a_0;
