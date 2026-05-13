@@ -34,9 +34,6 @@ SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor (SimpleFilter
     
     // This is where our plugin’s editor size is set.
     setSize (500, 700);
-
-    
-    addAndMakeVisible(square);
     
     // these define the parameters of our slider object
     midiVolume.setSliderStyle (juce::Slider::LinearBarVertical);
@@ -93,8 +90,6 @@ void SimpleFilterAudioProcessorEditor::resized()
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
     webComponent.setBounds (0, 0, getWidth(), getHeight() / 3);
-
-    square.setBounds(100, 100, 200, 200);
     
     // sets the position and size of the slider with arguments (x, y, width, height)
     midiVolume.setBounds (40, 30, 20, getHeight() - 60);

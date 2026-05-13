@@ -2,7 +2,6 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
-#include "Square.h"
 
 //==============================================================================
 /**
@@ -24,7 +23,6 @@ private:
     SimpleFilterAudioProcessor& audioProcessor;
     juce::WebBrowserComponent webComponent;
 
-    Square square;
     juce::Slider midiVolume;  // [1]
     juce::Slider frequencySlider;
     juce::TextButton playButton;
