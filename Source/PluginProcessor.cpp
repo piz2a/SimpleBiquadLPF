@@ -96,6 +96,7 @@ void SimpleFilterAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
     }
 
     frequencyParam = state.getRawParameterValue("freqHz");
+    resonanceParam = state.getRawParameterValue("resonance");
     playParam = state.getRawParameterValue("play");
     smoothedFreq.reset(sampleRate, 0.05); // 50ms 동안 부드럽게 변화
     smoothedFreq.setCurrentAndTargetValue(frequencyParam->load());
@@ -155,6 +156,12 @@ void SimpleFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     smoothedFreq.setTargetValue(freq);
     float currentFreq = smoothedFreq.getNextValue();
     smoothedFreq.skip(numSamples - 1);
+
+    const float res = resonanceParam->load();
+    const float q = 0.707f * juce::Decibels::decibelsToGain (res);  // Convert dB to linear gain. 0 dB = 0.707
+    smoothedQ.setTargetValue(q);
+    float currentQ = smoothedQ.getNextValue();
+    smoothedQ.skip(numSamples - 1);
     const bool shouldBePlaying = static_cast<bool>(playParam->load());
 
     /*static float lastFreq = -1.0f;
@@ -171,6 +178,7 @@ void SimpleFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         auto* channelData = buffer.getWritePointer(channel);
 
         filters[channel].setCutoffFrequency(currentFreq);
+        filters[channel].setQ(currentQ);
         filters[channel].setCoefficients();
 
         if (shouldBePlaying) {
@@ -235,6 +243,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimpleFilterAudioProcessor::
             20.0f,
             20000.0f,
             220.0f
+        ),
+        std::make_unique<juce::AudioParameterFloat> (  // why use make_unique? because the createParameters function needs to return a ParameterLayout object, which is a vector of unique pointers to RangedAudioParameter objects. By using make_unique, we can create a new AudioParameterFloat object and automatically wrap it in a unique pointer, which is then added to the ParameterLayout vector.
+            juce::ParameterID { "resonance", 1 },
+            "Resonance",
+            0.0f,
+            12.0f,
+            0.0f
         ),
         std::make_unique<juce::AudioParameterBool> (
             juce::ParameterID { "play", 1 },
