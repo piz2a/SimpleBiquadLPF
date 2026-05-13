@@ -87,16 +87,12 @@ void SimpleFilterAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    sineWaves.resize(getTotalNumOutputChannels());
-    for (auto& wave : sineWaves) {
-        wave.prepare(sampleRate);
-    }
-
     filters.resize(getTotalNumOutputChannels());
     for (auto& filter : filters) {
         filter.prepare(sampleRate);
         filter.setCutoffFrequency(1000.0f);
         filter.setQ(0.707f);
+        filter.setCoefficients();  // mandatory
     }
 
     frequencyParam = state.getRawParameterValue("freqHz");
@@ -147,19 +143,27 @@ void SimpleFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // This is here to avoid people getting screaming feedback
     // when they first compile a plugin, but obviously you don't need to keep
     // this code if your algorithm always overwrites all the output channels.
+    // If your algorithm only overwrites some of the output channels, make sure to
+    // keep this code to avoid leaving garbage in the remaining output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
     const float freq = frequencyParam->load();
     const bool shouldBePlaying = static_cast<bool>(playParam->load());
 
-    for (int channel = 0; channel < buffer.getNumChannels(); ++channel) {
-        auto* output = buffer.getWritePointer(channel);
-        sineWaves[channel].setFrequency(freq);
-        sineWaves[channel].setAmplitude(shouldBePlaying ? 0.4f : 0.0f);
-        sineWaves[channel].process(output, buffer.getNumSamples());
+    static float lastFreq = -1.0f;
+    if (std::abs(freq - lastFreq) > 0.001f) {
+        for (auto& filter : filters) {
+            filter.setCutoffFrequency(freq);
+            // shouldBePlaying is not used yet
+            filter.setCoefficients();
+        }
+        lastFreq = freq;
+    }
 
-        filters[channel].process(output, buffer.getNumSamples());
+    for (int channel = 0; channel < totalNumInputChannels; ++channel) {
+        auto* channelData = buffer.getWritePointer(channel);
+        filters[channel].process(channelData, buffer.getNumSamples()); 
     }
 
     // This is the place where you'd normally do the guts of your plugin's
@@ -212,14 +216,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimpleFilterAudioProcessor::
 {
     return {
         std::make_unique<juce::AudioParameterFloat> (  // why use make_unique? because the createParameters function needs to return a ParameterLayout object, which is a vector of unique pointers to RangedAudioParameter objects. By using make_unique, we can create a new AudioParameterFloat object and automatically wrap it in a unique pointer, which is then added to the ParameterLayout vector.
-            juce::ParameterID { "freqHz" },
+            juce::ParameterID { "freqHz", 1 },
             "Frequency",
             20.0f,
             20000.0f,
             220.0f
         ),
         std::make_unique<juce::AudioParameterBool> (
-            juce::ParameterID { "play" },
+            juce::ParameterID { "play", 1 },
             "Play",
             true
         )
