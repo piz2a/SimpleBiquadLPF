@@ -1,41 +1,145 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 
-// JUCE 통신용 스로틀 유틸리티 (16ms = 약 60fps)
+// JUCE 통신용 스로틀 유틸리티
 function useThrottle(callback: (...args: any[]) => void, delay: number) {
   const lastCall = useRef<number>(0);
-  return (...args: any[]) => {
+  return useCallback((...args: any[]) => {
     const now = Date.now();
     if (now - lastCall.current >= delay) {
       lastCall.current = now;
       callback(...args);
     }
+  }, [callback, delay]);
+}
+
+// 로그 스케일 변환 수식: $f = f_{min} \cdot (f_{max}/f_{min})^p$
+const linearToLog = (p: number, min: number, max: number) => 
+  min * Math.pow(max / min, p);
+
+const logToLinear = (f: number, min: number, max: number) => 
+  Math.log(f / min) / Math.log(max / min);
+
+interface KnobProps {
+  label: string;
+  min: number;
+  max: number;
+  initialValue: number;
+  unit: string;
+  isLog?: boolean;
+  onUpdate: (val: number) => void;
+  decimalPlaces?: number;
+}
+
+const Knob = ({ label, min, max, initialValue, unit, isLog, onUpdate, decimalPlaces = 0 }: KnobProps) => {
+  const [value, setValue] = useState(initialValue);
+  const [isEditing, setIsEditing] = useState(false);
+  const knobRef = useRef<HTMLDivElement>(null);
+  const startY = useRef(0);
+  const startVal = useRef(0);
+
+  const updateVal = useCallback((newVal: number) => {
+    const clamped = Math.max(min, Math.min(max, newVal));
+    const fixed = parseFloat(clamped.toFixed(decimalPlaces));
+    setValue(fixed);
+    onUpdate(fixed);
+  }, [min, max, decimalPlaces, onUpdate]);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (isEditing) return;
+    startY.current = e.clientY;
+    // 로그 스케일일 경우 선형적인 0-1 비율로 변환하여 시작점 저장
+    startVal.current = isLog ? logToLinear(value, min, max) : (value - min) / (max - min);
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = startY.current - moveEvent.clientY;
+      const sensitivity = 200; // 200px 드래그 시 전체 범위 이동
+      const deltaPercent = deltaY / sensitivity;
+      const newPercent = Math.max(0, Math.min(1, startVal.current + deltaPercent));
+
+      if (isLog) {
+        updateVal(linearToLog(newPercent, min, max));
+      } else {
+        updateVal(min + newPercent * (max - min));
+      }
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
   };
-}
 
-// 로그 스케일 변환 유틸리티
-function linearToLogarithmic(linearValue: number, min: number, max: number): number {
-  // linearValue: 0-1 사이의 정규화된 값
-  const logMin = Math.log(min);
-  const logMax = Math.log(max);
-  return Math.exp(logMin + linearValue * (logMax - logMin));
-}
+  const handleManualInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const val = parseFloat((e.target as HTMLInputElement).value);
+      if (!isNaN(val)) updateVal(val);
+      setIsEditing(false);
+    }
+  };
 
-function logarithmicToLinear(frequency: number, min: number, max: number): number {
-  // frequency를 0-1 사이의 정규화된 값으로 변환
-  const logMin = Math.log(min);
-  const logMax = Math.log(max);
-  return (Math.log(frequency) - logMin) / (logMax - logMin);
-}
+  // 노브 회전 각도 계산 (-135도 ~ 135도)
+  const percent = isLog ? logToLinear(value, min, max) : (value - min) / (max - min);
+  const rotation = percent * 270 - 135;
 
-export default function NeumorphicOneKnob() {
-  const MIN_FREQ = 20;
-  const MAX_FREQ = 22050;
-  
-  const freqRef = useRef(1000);
-  const knobHandleRef = useRef<HTMLDivElement>(null);
-  const freqTextRef = useRef<HTMLSpanElement>(null);
-  const ringRef = useRef<SVGCircleElement>(null);
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <span className="text-[10px] font-black tracking-widest text-cyan-500 uppercase">{label}</span>
+      
+      <div 
+        ref={knobRef}
+        onMouseDown={onMouseDown}
+        className="relative w-28 h-28 rounded-full bg-slate-900 shadow-[5px_5px_15px_#050505,-5px_-5px_15px_#1a1a1a] flex items-center justify-center cursor-ns-resize group"
+      >
+        {/* Progress Ring (SVG) */}
+        <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="#1e293b" strokeWidth="4" />
+          <circle 
+            cx="50" cy="50" r="45" fill="none" stroke="#06b6d4" strokeWidth="4"
+            strokeDasharray={282.7}
+            strokeDashoffset={282.7 - (282.7 * percent)}
+            strokeLinecap="round"
+            className="transition-none drop-shadow-[0_0_5px_#06b6d4]"
+          />
+        </svg>
 
+        {/* Knob Face */}
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-950 shadow-lg flex flex-col items-center justify-center relative">
+          {/* Indicator Dot */}
+          <div 
+            className="absolute inset-0 transition-none"
+            style={{ transform: `rotate(${rotation}deg)` }}
+          >
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#22d3ee]" />
+          </div>
+
+          {/* Value Text */}
+          {isEditing ? (
+            <input 
+              autoFocus
+              className="w-16 bg-transparent text-center text-white font-bold outline-none border-b border-cyan-500"
+              defaultValue={value}
+              onKeyDown={handleManualInput}
+              onBlur={() => setIsEditing(false)}
+            />
+          ) : (
+            <span 
+              onDoubleClick={() => setIsEditing(true)}
+              className="text-lg font-black text-slate-100 cursor-text tracking-tighter"
+            >
+              {value}
+            </span>
+          )}
+          <span className="text-[8px] font-bold text-slate-500">{unit}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function SimpleBiquadLPF() {
   const sendParamToJuce = useThrottle((paramId: string, value: number) => {
     if (window.__juce_backend) {
       window.__juce_backend.callNativeFunction("updateParameter", [paramId, value]);
@@ -44,112 +148,46 @@ export default function NeumorphicOneKnob() {
     }
   }, 16);
 
-  const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
-    const target = e.target as HTMLInputElement;
-    const inputValue = Number(target.value);
-    
-    // inputValue: 0-100 (슬라이더 범위를 0-100으로 정규화)
-    const normalized = inputValue / 100;
-    
-    // 로그 스케일로 주파수 계산
-    const frequency = linearToLogarithmic(normalized, MIN_FREQ, MAX_FREQ);
-    freqRef.current = frequency;
-
-    // 1. 노브 회전 (로그 스케일 기반)
-    if (knobHandleRef.current) {
-      const rotation = normalized * 270 - 135;
-      knobHandleRef.current.style.transform = `rotate(${rotation}deg)`;
-    }
-
-    // 2. SVG 프로그레스 링 (로그 스케일 기반)
-    if (ringRef.current) {
-      const circumference = 2 * Math.PI * 45;
-      const offset = circumference - (circumference * normalized);
-      ringRef.current.style.strokeDashoffset = String(offset);
-    }
-
-    // 3. 텍스트 - 정수 또는 소수점 표시
-    if (freqTextRef.current) {
-      const displayValue = frequency < 1000 
-        ? Math.round(frequency).toString()
-        : frequency.toFixed(1);
-      freqTextRef.current.innerText = displayValue;
-    }
-
-    sendParamToJuce("freqHz", frequency);
-  };
-
   return (
-    <div className="w-[480px] h-[320px] bg-[#e0e5ec] flex items-center justify-between px-10 overflow-hidden font-sans text-[#444] select-none">
+    <div className="w-[480px] h-[320px] bg-black bg-[radial-gradient(circle_at_center,_#111_0%,_#000_100%)] flex flex-col items-center justify-between p-8 overflow-hidden font-sans border border-slate-800">
       
-      {/* Left Section: Info */}
-      <div className="flex flex-col gap-1 w-24">
-        <h1 className="text-[10px] font-black tracking-[0.2em] text-[#7a8da1] uppercase">Simple Filter</h1>
-        <div className="w-6 h-[2px] bg-emerald-400 shadow-[0_0_5px_#34d399] mb-4" />
-        <div className="text-[9px] font-bold text-[#a3b1c6] leading-tight">
-          S6 SELECTIVE<br/>CORE V2
+      {/* Cyberpunk Header */}
+      <div className="w-full flex justify-between items-center border-b border-cyan-900/30 pb-4">
+        <h1 className="text-xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]">
+          SIMPLE_BIQUAD_LPF
+        </h1>
+        <div className="flex gap-1">
+          <div className="w-2 h-2 bg-cyan-500 animate-pulse" />
+          <div className="w-8 h-2 bg-slate-800" />
         </div>
       </div>
 
-      {/* Center Section: Main Knob */}
-      <div className="relative w-44 h-44 flex items-center justify-center">
-        {/* Outer Shadow (Sunken) */}
-        <div className="absolute inset-0 rounded-full shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]" />
-        
-        {/* SVG Progress Ring */}
-        <svg className="absolute w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 100 100">
-          <circle 
-            ref={ringRef}
-            cx="50" cy="50" r="45" 
-            fill="transparent" 
-            stroke="#10b981" 
-            strokeWidth="4" 
-            strokeDasharray={2 * Math.PI * 45}
-            strokeDashoffset={2 * Math.PI * 45 * (1 - logarithmicToLinear(freqRef.current, MIN_FREQ, MAX_FREQ))}
-            strokeLinecap="round"
-            className="transition-none"
-          />
-        </svg>
-
-        {/* Knob Body (Raised) */}
-        <div className="w-32 h-32 rounded-full bg-[#e0e5ec] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] flex items-center justify-center relative">
-          <div 
-            ref={knobHandleRef}
-            className="absolute inset-0 transition-none"
-            style={{ transform: `rotate(${logarithmicToLinear(freqRef.current, MIN_FREQ, MAX_FREQ) * 270 - 135}deg)` }}
-          >
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_5px_#10b981]" />
-          </div>
-
-          <div className="flex flex-col items-center pointer-events-none">
-            <span ref={freqTextRef} className="text-2xl font-black text-[#4d5d6d]">
-              {freqRef.current < 1000 ? Math.round(freqRef.current) : freqRef.current.toFixed(1)}
-            </span>
-            <span className="text-[9px] font-bold text-[#a3b1c6] tracking-widest uppercase">Hz</span>
-          </div>
-        </div>
-
-        {/* Vertical Invisible Control Overlay */}
-        <input 
-          type="range" 
-          min="0" max="100" 
-          defaultValue={logarithmicToLinear(freqRef.current, MIN_FREQ, MAX_FREQ) * 100}
-          onInput={handleInput}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-ns-resize z-10"
-          style={{ WebkitAppearance: 'slider-vertical' } as React.CSSProperties}
+      {/* Control Section */}
+      <div className="flex gap-16 items-center flex-1">
+        <Knob 
+          label="Cutoff" 
+          min={20} 
+          max={22050} 
+          initialValue={1000} 
+          unit="Hz" 
+          isLog={true}
+          onUpdate={(v) => sendParamToJuce("freqHz", v)} 
+        />
+        <Knob 
+          label="Resonance" 
+          min={0.0} 
+          max={12.0} 
+          initialValue={0.7} 
+          unit="dB" 
+          decimalPlaces={1}
+          onUpdate={(v) => sendParamToJuce("resonance", v)} 
         />
       </div>
 
-      {/* Right Section: Visualizer Placeholder */}
-      <div className="w-24 flex flex-col items-end gap-3">
-        <div className="flex gap-1 h-12 items-end">
-          {[0.4, 0.7, 1, 0.8, 0.5].map((h, i) => (
-            <div key={i} className="w-1 bg-[#c0c9d6] rounded-full" style={{ height: `${h * 100}%` }} />
-          ))}
-        </div>
-        <div className="px-2 py-1 rounded bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] text-[8px] font-mono text-[#7a8da1]">
-          ACTIVE_DSP
-        </div>
+      {/* Footer Decoration */}
+      <div className="w-full flex justify-between text-[8px] font-mono text-slate-600 tracking-[0.3em] uppercase">
+        <span>S6_Selective_Architecture_v.2026</span>
+        <span>Internal_Processing_64bit</span>
       </div>
     </div>
   );
