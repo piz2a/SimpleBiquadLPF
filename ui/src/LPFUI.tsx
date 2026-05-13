@@ -1,4 +1,5 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
 
 // JUCE 통신용 스로틀 유틸리티
 function useThrottle(callback: (...args: any[]) => void, delay: number) {
@@ -86,7 +87,7 @@ const Knob = ({ label, min, max, initialValue, unit, isLog, onUpdate, decimalPla
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <span className="text-[10px] font-black tracking-widest text-cyan-500 uppercase">{label}</span>
+      <span className="text-[10px] font-black tracking-widest text-cyan-500 uppercase select-none" draggable={false}>{label}</span>
       
       <div 
         ref={knobRef}
@@ -127,19 +128,21 @@ const Knob = ({ label, min, max, initialValue, unit, isLog, onUpdate, decimalPla
           ) : (
             <span 
               onDoubleClick={() => setIsEditing(true)}
-              className="text-lg font-black text-slate-100 cursor-text tracking-tighter"
+              className="text-lg font-black text-slate-100 cursor-text tracking-tighter select-none"
             >
               {value}
             </span>
           )}
-          <span className="text-[8px] font-bold text-slate-500">{unit}</span>
+          <span className="text-[8px] font-bold text-slate-500 select-none" draggable={false}>{unit}</span>
         </div>
       </div>
     </div>
   );
 };
 
-export default function SimpleBiquadLPF() {
+export default function LPFUI() {
+  const [isBypassed, setIsBypassed] = useState(false);
+
   const sendParamToJuce = useThrottle((paramId: string, value: number) => {
     if (window.__juce_backend) {
       window.__juce_backend.callNativeFunction("updateParameter", [paramId, value]);
@@ -149,17 +152,30 @@ export default function SimpleBiquadLPF() {
   }, 16);
 
   return (
-    <div className="w-[480px] h-[320px] bg-black bg-[radial-gradient(circle_at_center,_#111_0%,_#000_100%)] flex flex-col items-center justify-between p-8 overflow-hidden font-sans border border-slate-800">
+    <div className="w-[480px] h-[320px] bg-black bg-[radial-gradient(circle_at_center,_#111_0%,_#000_100%)] flex flex-col items-center justify-between p-6 overflow-hidden font-sans border border-slate-800 select-none" onDragStart={(event) => event.preventDefault()}>
       
       {/* Cyberpunk Header */}
-      <div className="w-full flex justify-between items-center border-b border-cyan-900/30 pb-4">
-        <h1 className="text-xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]">
-          SIMPLE_BIQUAD_LPF
+      <div className="w-full flex justify-between items-center border-b border-cyan-900/30 pb-2">
+        <h1 className="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)] select-none" draggable={false}>
+          SimpleBiquadLPF
         </h1>
-        <div className="flex gap-1">
-          <div className="w-2 h-2 bg-cyan-500 animate-pulse" />
-          <div className="w-8 h-2 bg-slate-800" />
-        </div>
+        <Button
+          type="button"
+          variant={isBypassed ? 'outline' : 'default'}
+          size="sm"
+          onClick={() => {
+            const nextBypassState = !isBypassed;
+            setIsBypassed(nextBypassState);
+            sendParamToJuce('bypass', nextBypassState ? 1 : 0);
+          }}
+          className={`h-8 w-24 px-3 text-[10px] font-black tracking-[0.2em] uppercase transition-all ${
+            isBypassed
+              ? 'border-slate-700 bg-slate-900 text-white hover:bg-slate-800 hover:text-white'
+              : 'border-cyan-300 bg-slate-900 text-white shadow-[0_0_12px_rgba(34,211,238,0.25)] hover:bg-slate-800 hover:border-cyan-200 hover:text-white'
+          }`}
+        >
+          {isBypassed ? 'Bypass' : 'Active'}
+        </Button>
       </div>
 
       {/* Control Section */}
@@ -186,8 +202,8 @@ export default function SimpleBiquadLPF() {
 
       {/* Footer Decoration */}
       <div className="w-full flex justify-between text-[8px] font-mono text-slate-600 tracking-[0.3em] uppercase">
-        <span>S6_Selective_Architecture_v.2026</span>
-        <span>Internal_Processing_64bit</span>
+        <span className="select-none" draggable={false}>S6_Selective_Architecture_v.2026</span>
+        <span className="select-none" draggable={false}>Internal_Processing_64bit</span>
       </div>
     </div>
   );
