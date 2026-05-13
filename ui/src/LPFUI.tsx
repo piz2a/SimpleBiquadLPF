@@ -95,12 +95,11 @@ const Knob = ({ label, min, max, initialValue, unit, isLog, onUpdate, decimalPla
         className="relative w-28 h-28 rounded-full bg-slate-900 shadow-[5px_5px_15px_#050505,-5px_-5px_15px_#1a1a1a] flex items-center justify-center cursor-ns-resize group"
       >
         {/* Progress Ring (SVG) */}
-        <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100">
+        <svg className="absolute w-full h-full" viewBox="0 0 100 100" style={{ transform: `rotate(-225deg)` }}>
           <circle cx="50" cy="50" r="45" fill="none" stroke="#1e293b" strokeWidth="4" />
           <circle 
             cx="50" cy="50" r="45" fill="none" stroke="#06b6d4" strokeWidth="4"
-            strokeDasharray={282.7}
-            strokeDashoffset={282.7 - (282.7 * percent)}
+            strokeDasharray={`${211.5 * percent} ${282.7 - 211.5 * percent}`}
             strokeLinecap="round"
             className="transition-none drop-shadow-[0_0_5px_#06b6d4]"
           />
@@ -202,8 +201,8 @@ export default function LPFUI() {
 
       {/* Footer Decoration */}
       <div className="w-full flex justify-between text-[8px] font-mono text-slate-600 tracking-[0.3em] uppercase">
-        <span className="select-none" draggable={false}>S6_Selective_Architecture_v.2026</span>
-        <span className="select-none" draggable={false}>Internal_Processing_64bit</span>
+        <span className="select-none" draggable={false}>2026 Jihoaudio</span>
+        <span className="select-none" draggable={false}>ahnjiho.com</span>
       </div>
     </div>
   );
