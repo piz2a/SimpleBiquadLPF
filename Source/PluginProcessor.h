@@ -52,6 +52,7 @@ public:
 
 private:
     std::vector<SimpleFilterChannel> filters;
+    juce::LinearSmoothedValue<float> smoothedFreq;
     juce::AudioProcessorValueTreeState state;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
     std::atomic<float>* frequencyParam;

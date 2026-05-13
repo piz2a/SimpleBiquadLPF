@@ -97,6 +97,8 @@ void SimpleFilterAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
 
     frequencyParam = state.getRawParameterValue("freqHz");
     playParam = state.getRawParameterValue("play");
+    smoothedFreq.reset(sampleRate, 0.05); // 50ms 동안 부드럽게 변화
+    smoothedFreq.setCurrentAndTargetValue(frequencyParam->load());
 }
 
 void SimpleFilterAudioProcessor::releaseResources()
@@ -136,6 +138,7 @@ void SimpleFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
+    auto numSamples = buffer.getNumSamples();
 
     // In case we have more outputs than inputs, this code clears any output
     // channels that didn't contain input data, (because these aren't
@@ -149,9 +152,12 @@ void SimpleFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         buffer.clear (i, 0, buffer.getNumSamples());
 
     const float freq = frequencyParam->load();
+    smoothedFreq.setTargetValue(freq);
+    float currentFreq = smoothedFreq.getNextValue();
+    smoothedFreq.skip(numSamples - 1);
     const bool shouldBePlaying = static_cast<bool>(playParam->load());
 
-    static float lastFreq = -1.0f;
+    /*static float lastFreq = -1.0f;
     if (std::abs(freq - lastFreq) > 0.001f) {
         for (auto& filter : filters) {
             filter.setCutoffFrequency(freq);
@@ -159,11 +165,19 @@ void SimpleFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             filter.setCoefficients();
         }
         lastFreq = freq;
-    }
+    }*/
 
     for (int channel = 0; channel < totalNumInputChannels; ++channel) {
         auto* channelData = buffer.getWritePointer(channel);
-        filters[channel].process(channelData, buffer.getNumSamples()); 
+
+        filters[channel].setCutoffFrequency(currentFreq);
+        filters[channel].setCoefficients();
+
+        if (shouldBePlaying) {
+            filters[channel].process(channelData, numSamples);
+        } else {
+            // bypass
+        }
     }
 
     // This is the place where you'd normally do the guts of your plugin's

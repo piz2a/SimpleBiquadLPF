@@ -3,7 +3,9 @@
 void SimpleFilterChannel::setCoefficients()
 {
     // Biquad LPF
-    const float w0 = 2.0f * juce::MathConstants<float>::pi * cutoffFrequency / currentSampleRate;
+    // setCoefficients 내부
+    float safeCutoff = std::min(cutoffFrequency, currentSampleRate * 0.45f); // 약 20kHz로 제한
+    const float w0 = 2.0f * juce::MathConstants<float>::pi * safeCutoff / currentSampleRate;
     const float alpha = std::sin(w0) / (2.0f * q);
     const float a_0 = 1.0f + alpha;
     b_1 = (1.0f - std::cos(w0)) / a_0;
@@ -32,6 +34,13 @@ void SimpleFilterChannel::process (float* channelData, const int numSamples)
         float input_0 = channelData[sample];
         // Biquadratic low-pass filter
         float output = b_2 * input_0 + b_1 * prevIn1 + b_2 * prevIn2 - a_1 * prevOut1 - a_2 * prevOut2;
+
+        // 안정성 검사: NaN이나 Inf가 나오면 모든 상태를 0으로 리셋
+        if (std::isnan(output) || std::isinf(output)) {
+            previousOutput1 = previousOutput2 = previousInput1 = previousInput2 = 0.0f;
+            output = 0.0f;
+        }
+
         channelData[sample] = output;
         prevIn2 = prevIn1;
         prevIn1 = input_0;
