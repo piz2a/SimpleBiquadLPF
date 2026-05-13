@@ -10,7 +10,6 @@
 class SimpleFilterAudioProcessor  : public juce::AudioProcessor
 {
 public:
-    float noteOnVel;
     //==============================================================================
     SimpleFilterAudioProcessor();
     ~SimpleFilterAudioProcessor() override;

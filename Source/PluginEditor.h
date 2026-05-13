@@ -23,7 +23,6 @@ private:
     SimpleFilterAudioProcessor& audioProcessor;
     juce::WebBrowserComponent webComponent;
 
-    juce::Slider midiVolume;  // [1]
     juce::Slider frequencySlider;
     juce::TextButton playButton;
     juce::Label frequencyLabel {"FrequencyLabel", "Frequency"};

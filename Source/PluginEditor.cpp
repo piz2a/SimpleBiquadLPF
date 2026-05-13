@@ -29,30 +29,19 @@ SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor (SimpleFilter
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    // addAndMakeVisible (webComponent);
+    addAndMakeVisible (webComponent);
     webComponent.goToURL ("http://localhost:5173");
     
     // This is where our plugin’s editor size is set.
-    setSize (500, 700);
+    setSize (480, 320);
     
-    // these define the parameters of our slider object
-    midiVolume.setSliderStyle (juce::Slider::LinearBarVertical);
-    midiVolume.setRange (0.0, 127.0, 1.0);
-    midiVolume.setTextBoxStyle (juce::Slider::NoTextBox, false, 90, 0);
-    midiVolume.setPopupDisplayEnabled (true, false, this);
-    midiVolume.setTextValueSuffix (" Volume");
-    midiVolume.setValue (1.0);
-    // this function adds the slider to the editor
-    addAndMakeVisible (midiVolume);
-    // add the listener to the slider
-    midiVolume.addListener (this);
-    
+    /*
     frequencySlider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
     frequencySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 50);
     // frequencySlider.setRange(0.0f, 1.0f, 0.01f);
     addAndMakeVisible(frequencySlider);
     
-    playButton.setButtonText("Playing");
+    playButton.setButtonText("Active");
     playButton.setToggleState(true, juce::NotificationType::dontSendNotification);
     playButton.setClickingTogglesState(true);
     playButton.setColour(juce::TextButton::ColourIds::buttonOnColourId, juce::Colours::green);
@@ -61,12 +50,13 @@ SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor (SimpleFilter
     {
         // change the state of the button when it's clicked
         const bool isPlaying = playButton.getToggleState();
-        playButton.setButtonText(isPlaying ? "Playing" : "Bypassed");
+        playButton.setButtonText(isPlaying ? "Active" : "Bypassed");
     };
     addAndMakeVisible(playButton);
     
     frequencyLabel.setColour (juce::Label::ColourIds::outlineColourId, juce::Colours::white);
     addAndMakeVisible(frequencyLabel);
+    */
 }
 
 // DECONSTRUCTOR
@@ -77,28 +67,20 @@ SimpleFilterAudioProcessorEditor::~SimpleFilterAudioProcessorEditor()
 //==============================================================================
 void SimpleFilterAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (juce::Colours::black);  // (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-
-    g.setColour (juce::Colours::white);
-    g.setFont (juce::FontOptions (15.0f));
-    g.drawFittedText ("Midi Volume", 0, 0, getWidth(), 30, juce::Justification::centred, 1);
 }
 
 void SimpleFilterAudioProcessorEditor::resized()
 {
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
-    webComponent.setBounds (0, 0, getWidth(), getHeight() / 3);
+    webComponent.setBounds (0, 0, getWidth(), getHeight());
     
     // sets the position and size of the slider with arguments (x, y, width, height)
-    midiVolume.setBounds (40, 30, 20, getHeight() - 60);
-    frequencySlider.setBounds (getWidth() / 2 - 50, getHeight() / 2 - 100, 100, 200);
-    frequencyLabel.setBounds(getWidth() / 2 - 50, getHeight() / 2 - 100, 100, 20);
+    // frequencySlider.setBounds (getWidth() / 2 - 50, getHeight() / 2 - 100, 100, 200);
+    // frequencyLabel.setBounds(getWidth() / 2 - 50, getHeight() / 2 - 100, 100, 20);
     playButton.setBounds(getWidth() - 120, 30, 100, 30);
 }
 
 void SimpleFilterAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
 {
-    audioProcessor.noteOnVel = midiVolume.getValue();
 }
