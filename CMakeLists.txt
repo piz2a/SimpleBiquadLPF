@@ -28,8 +28,6 @@ target_sources(SimpleFilter PRIVATE
     Source/PluginEditor.h
     Source/SimpleFilterChannel.cpp
     Source/SimpleFilterChannel.h
-    Source/SineWaveChannel.cpp
-    Source/SineWaveChannel.h
 )
 
 # 4. 사용 중인 JUCE 모듈 링크

@@ -2,7 +2,6 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
-#include "SineWaveChannel.h"
 #include "SimpleFilterChannel.h"
 
 //==============================================================================
@@ -52,7 +51,6 @@ public:
     juce::AudioProcessorValueTreeState& getState() { return state; }
 
 private:
-    std::vector<SineWaveChannel> sineWaves;
     std::vector<SimpleFilterChannel> filters;
     juce::AudioProcessorValueTreeState state;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();

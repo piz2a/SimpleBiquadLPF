@@ -12,8 +12,8 @@ public:
     void prepare (double sampleRate);
     void process (float* channelData, const int numSamples);
     void setCoefficients();
-    void setCutoffFrequency(float newCutoff) { cutoffFrequency = newCutoff; setCoefficients(); }
-    void setQ(float newQ) { q = newQ; setCoefficients(); }
+    void setCutoffFrequency(float newCutoff) { cutoffFrequency = newCutoff; }
+    void setQ(float newQ) { q = newQ; }
     [[nodiscard]] float getCutoffFrequency() const { return cutoffFrequency; } 
     [[nodiscard]] float getQ() const { return q; }
 
