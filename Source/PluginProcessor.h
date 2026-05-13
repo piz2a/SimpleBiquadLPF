@@ -53,7 +53,7 @@ public:
 
 private:
     std::vector<SineWaveChannel> sineWaves;
-    SimpleFilterChannel filter;
+    std::vector<SimpleFilterChannel> filters;
     juce::AudioProcessorValueTreeState state;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
     std::atomic<float>* frequencyParam;

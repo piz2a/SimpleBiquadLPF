@@ -7,7 +7,7 @@ void SimpleFilterChannel::setCoefficients()
     const float alpha = std::sin(w0) / (2.0f * q);
     const float a_0 = 1.0f + alpha;
     b_1 = (1.0f - std::cos(w0)) / a_0;
-    b_2 = b_1 / 2.0f / a_0;
+    b_2 = b_1 / 2.0f;
     a_1 = -2.0f * std::cos(w0) / a_0;
     a_2 = (1.0f - alpha) / a_0;
 }
@@ -17,6 +17,8 @@ void SimpleFilterChannel::prepare (double sampleRate)
     currentSampleRate = static_cast<float>(sampleRate);
     previousOutput1 = 0.0f;
     previousOutput2 = 0.0f;
+    previousInput1 = 0.0f;
+    previousInput2 = 0.0f;
 }
 
 void SimpleFilterChannel::process (float* channelData, const int numSamples)
@@ -39,4 +41,6 @@ void SimpleFilterChannel::process (float* channelData, const int numSamples)
 
     previousOutput1 = prevOut1;
     previousOutput2 = prevOut2;
+    previousInput1 = prevIn1;
+    previousInput2 = prevIn2;
 }

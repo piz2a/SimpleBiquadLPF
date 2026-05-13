@@ -92,9 +92,12 @@ void SimpleFilterAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
         wave.prepare(sampleRate);
     }
 
-    filter.prepare(sampleRate);
-    filter.setCutoffFrequency(1000.0f);
-    filter.setQ(0.707f);
+    filters.resize(getTotalNumOutputChannels());
+    for (auto& filter : filters) {
+        filter.prepare(sampleRate);
+        filter.setCutoffFrequency(1000.0f);
+        filter.setQ(0.707f);
+    }
 
     frequencyParam = state.getRawParameterValue("freqHz");
     playParam = state.getRawParameterValue("play");
@@ -156,7 +159,7 @@ void SimpleFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         sineWaves[channel].setAmplitude(shouldBePlaying ? 0.4f : 0.0f);
         sineWaves[channel].process(output, buffer.getNumSamples());
 
-        filter.process(output, buffer.getNumSamples());
+        filters[channel].process(output, buffer.getNumSamples());
     }
 
     // This is the place where you'd normally do the guts of your plugin's
