@@ -146,4 +146,44 @@ export function useJuceToggle(paramId: string) {
 }
 
 export function useJuceComboBox(paramId: string) {
+    const [choiceIndex, setChoiceIndex] = useState(0);
+    const [choices, setChoices] = useState<string[]>([]);
+    const comboBoxStateRef = useRef<Juce.ComboBoxState>(null);
+
+    // Load ComboBoxState from JUCE and set up listener
+    useEffect(() => {
+        const state = Juce.getComboBoxState(paramId);
+        console.log(`✅ ComboBoxState for ${paramId} obtained:`, state);
+        comboBoxStateRef.current = state;
+
+        // Set choices from properties
+        setChoices(state.properties.choices || []);
+
+        const listener = () => {
+            const selectedIndex = state.getChoiceIndex();
+            console.log(`🔔 ${paramId} choice index from JUCE:`, selectedIndex);
+            setChoiceIndex(selectedIndex);
+        };
+
+        const listenerId = state.valueChangedEvent.addListener(listener);
+        listener(); // 초기 상태 동기화
+
+        // Cleanup
+        return () => state.valueChangedEvent.removeListener(listenerId);
+    }, [paramId]);
+
+    const handleChoiceChange = (index: number) => {
+        if (comboBoxStateRef.current && index >= 0 && index < choices.length) {
+            comboBoxStateRef.current.setChoiceIndex(index);
+            setChoiceIndex(index);
+        }
+    };
+
+    return {
+        choiceIndex,
+        setChoiceIndex,
+        choices,
+        comboBoxStateRef,
+        handleChoiceChange,
+    };
 }
