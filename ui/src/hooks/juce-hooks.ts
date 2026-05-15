@@ -107,6 +107,42 @@ export function useJuceKnob(paramId: string, min: number, max: number, isLog = f
 }
 
 export function useJuceToggle(paramId: string) {
+    const [value, setValue] = useState(false);
+    const toggleStateRef = useRef<Juce.ToggleState>(null);
+
+    // Load ToggleState from JUCE and set up listener
+    useEffect(() => {
+        const state = Juce.getToggleState(paramId);
+        console.log(`✅ ToggleState for ${paramId} obtained:`, state);
+        toggleStateRef.current = state;
+
+        const listener = () => {
+            const toggleValue = state.getValue();
+            console.log(`🔔 ${paramId} toggle value from JUCE:`, toggleValue);
+            setValue(toggleValue);
+        };
+
+        const listenerId = state.valueChangedEvent.addListener(listener);
+        listener(); // 초기 상태 동기화
+
+        // Cleanup
+        return () => state.valueChangedEvent.removeListener(listenerId);
+    }, [paramId]);
+
+    const handleToggle = () => {
+        if (toggleStateRef.current) {
+            const newValue = !value;
+            toggleStateRef.current.setValue(newValue);
+            setValue(newValue);
+        }
+    };
+
+    return {
+        value,
+        setValue,
+        toggleStateRef,
+        handleToggle,
+    };
 }
 
 export function useJuceComboBox(paramId: string) {

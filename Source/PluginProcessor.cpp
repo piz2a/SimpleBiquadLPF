@@ -97,7 +97,7 @@ void SimpleFilterAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
 
     frequencyParam = state.getRawParameterValue("freqHz");
     resonanceParam = state.getRawParameterValue("resonance");
-    playParam = state.getRawParameterValue("play");
+    bypassParam = state.getRawParameterValue("bypass");
     smoothedFreq.reset(sampleRate, 0.05); // 50ms 동안 부드럽게 변화
     smoothedFreq.setCurrentAndTargetValue(frequencyParam->load());
 }
@@ -162,13 +162,13 @@ void SimpleFilterAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiB
     smoothedQ.setTargetValue(q);
     float currentQ = smoothedQ.getNextValue();
     smoothedQ.skip(numSamples - 1);
-    const bool shouldBePlaying = static_cast<bool>(playParam->load());
+    const bool shouldBeBypassed = static_cast<bool>(bypassParam->load());
 
     /*static float lastFreq = -1.0f;
     if (std::abs(freq - lastFreq) > 0.001f) {
         for (auto& filter : filters) {
             filter.setCutoffFrequency(freq);
-            // shouldBePlaying is not used yet
+            // shouldBeBypassed is not used yet
             filter.setCoefficients();
         }
         lastFreq = freq;
@@ -181,7 +181,7 @@ void SimpleFilterAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiB
         filters[channel].setQ(currentQ);
         filters[channel].setCoefficients();
 
-        if (shouldBePlaying) {
+        if (!shouldBeBypassed) {
             filters[channel].process(channelData, numSamples);
         } else {
             // bypass
@@ -252,9 +252,9 @@ AudioProcessorValueTreeState::ParameterLayout SimpleFilterAudioProcessor::create
             0.0f
         ),
         std::make_unique<AudioParameterBool> (
-            ParameterID { "play", 1 },
-            "Play",
-            true
+            ParameterID { "bypass", 1 },
+            "Bypass",
+            false
         )
     };
 }

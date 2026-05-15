@@ -59,7 +59,7 @@ private:
     AudioProcessorValueTreeState::ParameterLayout createParameters();
     std::atomic<float>* frequencyParam;
     std::atomic<float>* resonanceParam;
-    std::atomic<float>* playParam;
+    std::atomic<float>* bypassParam;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleFilterAudioProcessor)
 };

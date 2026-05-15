@@ -25,10 +25,10 @@ private:
     SimpleFilterAudioProcessor& audioProcessor;
 
     Slider frequencySlider;
-    TextButton playButton;
+    TextButton bypassButton;
     Label frequencyLabel {"FrequencyLabel", "Frequency"};
     AudioProcessorValueTreeState::SliderAttachment freqSliderAttachment;
-    AudioProcessorValueTreeState::ButtonAttachment playButtonAttachment;
+    AudioProcessorValueTreeState::ButtonAttachment bypassButtonAttachment;
     WebSliderRelay freqRelay { "freqHz" };
     WebSliderParameterAttachment freqAttachment {
         *audioProcessor.getState().getParameter("freqHz"), freqRelay, nullptr
@@ -36,6 +36,10 @@ private:
     WebSliderRelay resonanceRelay { "resonance" };
     WebSliderParameterAttachment resonanceAttachment {
         *audioProcessor.getState().getParameter("resonance"), resonanceRelay, nullptr
+    };
+    WebToggleButtonRelay bypassRelay { "bypass" };
+    WebToggleButtonParameterAttachment bypassAttachment {
+        *audioProcessor.getState().getParameter("bypass"), bypassRelay, nullptr
     };
 
     WebBrowserComponent webComponent;

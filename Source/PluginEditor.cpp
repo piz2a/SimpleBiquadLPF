@@ -6,7 +6,7 @@
 SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor (SimpleFilterAudioProcessor& p)
     : AudioProcessorEditor (&p),audioProcessor (p),
       freqSliderAttachment(audioProcessor.getState(), "freqHz", frequencySlider),
-      playButtonAttachment(audioProcessor.getState(), "play", playButton),
+      bypassButtonAttachment(audioProcessor.getState(), "bypass", bypassButton),
       webComponent (WebBrowserComponent::Options{}
         .withBackend (WebBrowserComponent::Options::Backend::webview2)
         .withWinWebView2Options (WebBrowserComponent::Options::WinWebView2{}
@@ -16,6 +16,7 @@ SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor (SimpleFilter
         })
         .withOptionsFrom (freqRelay)
         .withOptionsFrom (resonanceRelay)
+        .withOptionsFrom (bypassRelay)
         .withNativeIntegrationEnabled() // Necessary
     )
 {
@@ -39,18 +40,18 @@ SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor (SimpleFilter
     // frequencySlider.setRange(0.0f, 1.0f, 0.01f);
     addAndMakeVisible(frequencySlider);
     
-    playButton.setButtonText("Active");
-    playButton.setToggleState(true, NotificationType::dontSendNotification);
-    playButton.setClickingTogglesState(true);
-    playButton.setColour(TextButton::ColourIds::buttonOnColourId, Colours::green);
-    playButton.setColour(TextButton::ColourIds::buttonColourId, Colours::red);
-    playButton.onClick = [this]()
+    bypassButton.setButtonText("Bypass");
+    bypassButton.setToggleState(false, NotificationType::dontSendNotification);
+    bypassButton.setClickingTogglesState(true);
+    bypassButton.setColour(TextButton::ColourIds::buttonOnColourId, Colours::green);
+    bypassButton.setColour(TextButton::ColourIds::buttonColourId, Colours::red);
+    bypassButton.onClick = [this]()
     {
         // change the state of the button when it's clicked
-        const bool isPlaying = playButton.getToggleState();
-        playButton.setButtonText(isPlaying ? "Active" : "Bypassed");
+        const bool isBypassed = bypassButton.getToggleState();
+        bypassButton.setButtonText(isBypassed ? "Bypassed" : "Active");
     };
-    addAndMakeVisible(playButton);
+    addAndMakeVisible(bypassButton);
     
     frequencyLabel.setColour (Label::ColourIds::outlineColourId, Colours::white);
     addAndMakeVisible(frequencyLabel);
@@ -76,7 +77,7 @@ void SimpleFilterAudioProcessorEditor::resized()
     // sets the position and size of the slider with arguments (x, y, width, height)
     // frequencySlider.setBounds (getWidth() / 2 - 50, getHeight() / 2 - 100, 100, 200);
     // frequencyLabel.setBounds(getWidth() / 2 - 50, getHeight() / 2 - 100, 100, 20);
-    playButton.setBounds(getWidth() - 120, 30, 100, 30);
+    bypassButton.setBounds(getWidth() - 120, 30, 100, 30);
 }
 
 void SimpleFilterAudioProcessorEditor::sliderValueChanged (Slider* slider)

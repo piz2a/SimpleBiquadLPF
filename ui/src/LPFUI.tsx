@@ -1,7 +1,7 @@
-import { useRef, useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { useJuceKnob } from './hooks/juce-hooks';
+import { useRef } from 'react';
+import { useJuceKnob, useJuceToggle } from './hooks/juce-hooks';
 import { logToLinear } from './utils/scale-transformation';
+import { Button } from './components/ui/button';
 
 interface KnobProps {
   label: string;
@@ -79,31 +79,39 @@ const Knob = ({ label, paramId, min, max, unit, isLog, decimalPlaces = 0, initia
   );
 };
 
-export default function LPFUI() {
-  const [isBypassed, setIsBypassed] = useState(false);
+interface BypassButtonProps {
+  paramId: string;
+}
 
+function BypassButton({ paramId }: BypassButtonProps) {
+  const { value: isBypassed, handleToggle } = useJuceToggle(paramId);
+
+  return (
+    <Button
+      type="button"
+      variant={isBypassed ? 'outline' : 'default'}
+      size="sm"
+      onClick={handleToggle}
+      className={`h-8 w-24 px-3 text-[10px] font-black tracking-[0.2em] uppercase transition-all ${
+        isBypassed
+          ? 'border-slate-700 bg-slate-900 text-white hover:bg-slate-800'
+          : 'border-cyan-300 bg-slate-900 text-white shadow-[0_0_12px_rgba(34,211,238,0.25)] hover:bg-slate-800'
+      }`}
+    >
+      {isBypassed ? 'Bypass' : 'Active'}
+    </Button>
+  );
+}
+
+
+export default function LPFUI() {
   return (
     <div className="w-[480px] h-[320px] bg-black bg-[radial-gradient(circle_at_center,_#111_0%,_#000_100%)] flex flex-col items-center justify-between p-6 overflow-hidden font-sans border border-slate-800 select-none">
       <div className="w-full flex justify-between items-center border-b border-cyan-900/30 pb-2">
         <h1 className="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]">
           SimpleBiquadLPF
         </h1>
-        <Button
-          type="button"
-          variant={isBypassed ? 'outline' : 'default'}
-          size="sm"
-          onClick={() => {
-            const nextBypassState = !isBypassed;
-            setIsBypassed(nextBypassState);
-            // send param to juce
-          }}
-          className={`h-8 w-24 px-3 text-[10px] font-black tracking-[0.2em] uppercase transition-all ${isBypassed
-            ? 'border-slate-700 bg-slate-900 text-white hover:bg-slate-800'
-            : 'border-cyan-300 bg-slate-900 text-white shadow-[0_0_12px_rgba(34,211,238,0.25)] hover:bg-slate-800'
-            }`}
-        >
-          {isBypassed ? 'Bypass' : 'Active'}
-        </Button>
+        <BypassButton paramId="bypass" />
       </div>
 
       {/* Control Section */}
