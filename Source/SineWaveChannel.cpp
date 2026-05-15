@@ -1,3 +1,5 @@
+// Not being used in this project, but can be used as a reference for implementing synthesizers in the future if needed.
+
 #include "SineWaveChannel.h"
 #include <iostream>
 #include <cassert>
