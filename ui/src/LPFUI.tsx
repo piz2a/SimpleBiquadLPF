@@ -25,9 +25,10 @@ const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlac
   const [isEditing, setIsEditing] = useState(false);
   const knobRef = useRef<HTMLDivElement>(null);
 
-  const sliderStateRef = useRef<any>(null);
+  const sliderStateRef = useRef<Juce.SliderState>(null);
   const isDragging = useRef(false);
-  
+
+  // Load SliderState from JUCE and set up listener
   useEffect(() => {
     const state = Juce.getSliderState(paramId);
     console.log(`✅ SliderState for ${paramId} obtained:`, state); 
@@ -48,7 +49,7 @@ const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlac
     return () => state.valueChangedEvent.removeListener(listenerId);
   }, [paramId, min, max, isLog, decimalPlaces]);
 
-  // 2. 드래그 조작 로직
+  // Drag handling
   const onMouseDown = (e: React.MouseEvent) => {
     if (isEditing || !sliderStateRef.current) return;
     
@@ -69,8 +70,10 @@ const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlac
 
       // 백엔드 전송
       const normalizedFixedVal = (fixedVal - min) / (max - min);
-      sliderStateRef.current.setNormalisedValue(normalizedFixedVal);
-      console.log('realVal:', realVal, 'fixedVal:', fixedVal, 'normalizedFixedVal:', normalizedFixedVal);
+      sliderStateRef.current?.setNormalisedValue(normalizedFixedVal);
+      if (import.meta.env.DEV) {  // Only log in development
+        console.log('realVal:', realVal, 'fixedVal:', fixedVal, 'normalizedFixedVal:', normalizedFixedVal);
+      }
     };
 
     const onMouseUp = () => {
@@ -155,7 +158,6 @@ export default function LPFUI() {
 
   return (
     <div className="w-[480px] h-[320px] bg-black bg-[radial-gradient(circle_at_center,_#111_0%,_#000_100%)] flex flex-col items-center justify-between p-6 overflow-hidden font-sans border border-slate-800 select-none">
-      
       <div className="w-full flex justify-between items-center border-b border-cyan-900/30 pb-2">
         <h1 className="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]">
           SimpleBiquadLPF
