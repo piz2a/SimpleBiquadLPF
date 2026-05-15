@@ -1,7 +1,10 @@
-import { useRef } from 'react';
+// TODO: Find out the reason why the log-knob's value get corrupted when we single click it
+
+import { useLayoutEffect, useRef } from 'react';
 import { useJuceKnob, useJuceToggle } from './hooks/juce-hooks';
 import { logToLinear } from './utils/scale-transformation';
 import { Button } from './components/ui/button';
+import useOnClickOutside from './hooks/useOnClickOutside';
 
 interface KnobProps {
   label: string;
@@ -16,18 +19,77 @@ interface KnobProps {
 
 const Knob = ({ label, paramId, min, max, unit, isLog, decimalPlaces = 0, initialValue = 0 }: KnobProps) => {
   const knobRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const valueRef = useRef<HTMLSpanElement>(null);
+  const lastClickTimeRef = useRef<number>(0);
+  const clickCountRef = useRef<number>(0);
 
   const {
     value,
     isEditing,
     setIsEditing,
     handleManualInput,
-    onMouseDown,  // drag handling for knob
+    onMouseDown: originalOnMouseDown,
   } = useJuceKnob(paramId, min, max, isLog, decimalPlaces, initialValue);
 
   // 시각적 표현을 위한 퍼센트 계산
   const percent = isLog ? logToLinear(value, min, max) : (value - min) / (max - min);
   const rotation = percent * 270 - 135;
+
+  // Unified mouse down handler for both drag and double-click detection
+  const handleKnobMouseDown = (e: React.MouseEvent) => {
+    const now = Date.now();
+    const timeSinceLastClick = now - lastClickTimeRef.current;
+
+    // Double-click detection: second click within 300ms
+    if (timeSinceLastClick < 300) {
+      clickCountRef.current++;
+      if (clickCountRef.current === 2) {
+        console.log(`✏️ Double-click detected on ${paramId}, entering edit mode.`);
+        setIsEditing(true);
+        clickCountRef.current = 0;
+        lastClickTimeRef.current = 0;
+        return;
+      }
+    } else {
+      clickCountRef.current = 1;
+    }
+
+    lastClickTimeRef.current = now;
+
+    // If in editing mode, don't start drag
+    if (isEditing) return;
+
+    // Otherwise, start drag
+    originalOnMouseDown(e);
+  };
+
+  useLayoutEffect(() => {
+    if (isEditing) {
+      const input = inputRef.current;
+      if (input) {
+        input.focus({ preventScroll: true });
+        requestAnimationFrame(() => input.select());
+      }
+    }
+  }, [isEditing]);
+
+  // 외부 클릭 시 편집 모드 해제
+  useOnClickOutside([knobRef, inputRef, valueRef], () => {  // ref list 안에 무슨 ref를 넣어야 할지 아직 확정 못 함
+    if (isEditing) {
+      const input = inputRef.current;
+      const inputValue = input?.value ?? String(value);
+      const parsed = parseFloat(inputValue);
+
+      if (!Number.isNaN(parsed)) {
+        const clamped = Math.max(min, Math.min(max, parsed));
+        console.log(`✏️ Outside click for ${paramId}, value:`, inputValue, 'clamped:', clamped);
+        handleManualInput({ key: 'Enter', target: { value: String(clamped) } } as any);
+      } else {
+        setIsEditing(false);
+      }
+    }
+  });
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -35,11 +97,13 @@ const Knob = ({ label, paramId, min, max, unit, isLog, decimalPlaces = 0, initia
 
       <div
         ref={knobRef}
-        onMouseDown={onMouseDown}
-        className="relative w-28 h-28 rounded-full bg-slate-900 shadow-[5px_5px_15px_#050505,-5px_-5px_15px_#1a1a1a] flex items-center justify-center cursor-ns-resize group"
+        onMouseDown={handleKnobMouseDown}
+        className={`relative w-28 h-28 rounded-full bg-slate-900 shadow-[5px_5px_15px_#050505,-5px_-5px_15px_#1a1a1a] flex items-center justify-center group ${
+          isEditing ? '' : 'cursor-ns-resize'
+        }`}
       >
         {/* Progress Ring (SVG) */}
-        <svg className="absolute w-full h-full" viewBox="0 0 100 100" style={{ transform: `rotate(-225deg)` }}>
+        <svg className="absolute z-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" style={{ transform: `rotate(-225deg)` }}>
           <circle cx="50" cy="50" r="45" fill="none" stroke="#1e293b" strokeWidth="4" />
           <circle
             cx="50" cy="50" r="45" fill="none" stroke="#06b6d4" strokeWidth="4"
@@ -50,29 +114,56 @@ const Knob = ({ label, paramId, min, max, unit, isLog, decimalPlaces = 0, initia
         </svg>
 
         {/* Knob Face */}
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-950 shadow-lg flex flex-col items-center justify-center relative">
-          <div className="absolute inset-0 transition-none" style={{ transform: `rotate(${rotation}deg)` }}>
+        <div className="relative z-10 w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-950 shadow-lg flex flex-col items-center justify-center">
+          <div className="absolute inset-0 z-0 pointer-events-none transition-none" style={{ transform: `rotate(${rotation}deg)` }}>
             <div className="absolute top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#22d3ee]" />
           </div>
 
           {/* Value Text */}
           {isEditing ? (
             <input
+              ref={inputRef}
               autoFocus
-              className="w-16 bg-transparent text-center text-white font-bold outline-none border-b border-cyan-500"
+              type="text"
+              inputMode="decimal"
+              className="relative z-20 w-16 bg-transparent text-center text-white font-bold outline-none border-b border-cyan-500"
               defaultValue={value}
-              onKeyDown={handleManualInput}
-              onBlur={() => setIsEditing(false)}
+              onKeyDown={(e) => {
+                // Only allow numbers, dots, backspace, delete, arrow keys, tab, enter
+                const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', 'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'];
+                if (!allowedKeys.includes(e.key)) {
+                  e.preventDefault();
+                }
+                // Call original handler on Enter
+                if (e.key === 'Enter') {
+                  console.log(`✏️ Enter pressed in input for ${paramId}, value:`, (e.target as HTMLInputElement).value);
+                  handleManualInput(e);
+                }
+                if (e.key === 'Escape') {
+                  console.log(`✏️ Escape pressed in input for ${paramId}, exiting edit mode.`);
+                  setIsEditing(false);
+                }
+              }}
+              onInput={(e) => {
+                // Filter input to only numbers and single dot
+                const input = e.currentTarget.value;
+                const filtered = input.replace(/[^\d.]/g, '').replace(/^\./, '0.').replace(/\.(?=.*\.)/g, '');
+                e.currentTarget.value = filtered;
+              }}
+              onFocus={(e) => {
+                // Select all text on focus
+                e.currentTarget.select();
+              }}
             />
           ) : (
             <span
-              onDoubleClick={() => setIsEditing(true)}
-              className="text-lg font-black text-slate-100 cursor-text tracking-tighter select-none"
+              ref={valueRef}
+              className="relative z-20 text-lg font-black text-slate-100 tracking-tighter select-none"
             >
               {value}
             </span>
           )}
-          <span className="text-[8px] font-bold text-slate-500 select-none">{unit}</span>
+          <span className="relative z-20 text-[8px] font-bold text-slate-500 select-none">{unit}</span>
         </div>
       </div>
     </div>

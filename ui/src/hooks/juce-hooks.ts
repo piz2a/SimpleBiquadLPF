@@ -9,6 +9,12 @@ export function useJuceSlider(paramId: string, min: number, max: number, isLog =
     const sliderStateRef = useRef<Juce.SliderState>(null);
     const isDragging = useRef(false);
 
+    const isEditingRef = useRef(false);
+
+    useEffect(() => {
+        isEditingRef.current = isEditing;
+    }, [isEditing]);
+
     // Load SliderState from JUCE and set up listener
     useEffect(() => {
         const state = Juce.getSliderState(paramId);
@@ -16,7 +22,7 @@ export function useJuceSlider(paramId: string, min: number, max: number, isLog =
         sliderStateRef.current = state;
 
         const listener = () => {
-            if (!isDragging.current) {
+            if (!isDragging.current && !isEditingRef.current) {
                 const scaledValue = state.getScaledValue();
                 console.log(`🔔 ${paramId} scaled value from JUCE:`, scaledValue);
                 setValue(parseFloat(scaledValue.toFixed(decimalPlaces)));
@@ -30,15 +36,16 @@ export function useJuceSlider(paramId: string, min: number, max: number, isLog =
         return () => state.valueChangedEvent.removeListener(listenerId);
     }, [paramId, min, max, isLog, decimalPlaces]);
 
-    const handleManualInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleManualInput = (e: React.KeyboardEvent<HTMLInputElement>) => {  // call it in the escape in the input field
         if (e.key === 'Enter' && sliderStateRef.current) {
             const val = parseFloat((e.target as HTMLInputElement).value);
             if (!isNaN(val)) {
                 const clamped = Math.max(min, Math.min(max, val));
-                const norm = isLog ? logToLinear(clamped, min, max) : (clamped - min) / (max - min);
+                const norm = (clamped - min) / (max - min);
                 sliderStateRef.current.setNormalisedValue(norm);
                 setValue(parseFloat(clamped.toFixed(decimalPlaces)));
             }
+            console.log(`✏️ Manual input for ${paramId}:`, (e.target as HTMLInputElement).value);
             setIsEditing(false);
         }
     };
