@@ -241,7 +241,7 @@ AudioProcessorValueTreeState::ParameterLayout SimpleFilterAudioProcessor::create
             ParameterID { "freqHz", 1 },
             "Frequency",
             20.0f,
-            20000.0f,
+            22050.0f,
             220.0f
         ),
         std::make_unique<AudioParameterFloat> (

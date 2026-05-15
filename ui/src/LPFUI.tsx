@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import * as Juce from './juce';
 
@@ -36,9 +36,9 @@ const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlac
 
     const listener = () => {
       if (!isDragging.current) {
-        const norm = state.getNormalisedValue();
-        const realVal = isLog ? linearToLog(norm, min, max) : min + norm * (max - min);
-        setValue(parseFloat(realVal.toFixed(decimalPlaces)));
+        const scaledValue = state.getScaledValue();
+        console.log(`🔔 ${paramId} scaled value from JUCE:`, scaledValue);
+        setValue(parseFloat(scaledValue.toFixed(decimalPlaces)));
       }
     };
 
@@ -63,12 +63,15 @@ const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlac
       const deltaNorm = deltaY / sensitivity;
       const newNorm = Math.max(0, Math.min(1, startNorm + deltaNorm));
 
-      // 백엔드 전송
-      sliderStateRef.current.setNormalisedValue(newNorm);
-
       // UI 즉시 업데이트 (React State)
       const realVal = isLog ? linearToLog(newNorm, min, max) : min + newNorm * (max - min);
-      setValue(parseFloat(realVal.toFixed(decimalPlaces)));
+      const fixedVal = parseFloat(realVal.toFixed(decimalPlaces));
+      setValue(fixedVal);
+
+      // 백엔드 전송
+      const normalizedFixedVal = (fixedVal - min) / (max - min);
+      sliderStateRef.current.setNormalisedValue(normalizedFixedVal);
+      console.log('realVal:', realVal, 'fixedVal:', fixedVal, 'normalizedFixedVal:', normalizedFixedVal);
     };
 
     const onMouseUp = () => {
