@@ -11,7 +11,7 @@ const logToLinear = (f: number, min: number, max: number) =>
 
 interface KnobProps {
   label: string;
-  paramId: string; // JUCE 파라미터 ID 추가
+  paramId: string; // parameter ID in JUCE APVTS
   min: number;
   max: number;
   initialValue: number;
@@ -24,11 +24,10 @@ const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlac
   const [value, setValue] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
   const knobRef = useRef<HTMLDivElement>(null);
-  
-  // JUCE Slider State 레퍼런스
+
   const sliderStateRef = useRef<any>(null);
   const isDragging = useRef(false);
-
+  
   useEffect(() => {
     const state = Juce.getSliderState(paramId);
     console.log(`✅ SliderState for ${paramId} obtained:`, state); 
