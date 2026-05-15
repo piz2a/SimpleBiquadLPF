@@ -1,103 +1,29 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import * as Juce from './juce';
-
-// 로그 스케일 변환 수식
-const linearToLog = (p: number, min: number, max: number) => 
-  min * Math.pow(max / min, p);
-
-const logToLinear = (f: number, min: number, max: number) => 
-  Math.log(f / min) / Math.log(max / min);
+import { useJuceKnob } from './hooks/juce-hooks';
+import { logToLinear } from './utils/scale-transformation';
 
 interface KnobProps {
   label: string;
   paramId: string; // parameter ID in JUCE APVTS
   min: number;
   max: number;
-  initialValue: number;
+  initialValue?: number;
   unit: string;
   isLog?: boolean;
   decimalPlaces?: number;
 }
 
-const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlaces = 0 }: KnobProps) => {
-  const [value, setValue] = useState(initialValue);
-  const [isEditing, setIsEditing] = useState(false);
+const Knob = ({ label, paramId, min, max, unit, isLog, decimalPlaces = 0, initialValue = 0 }: KnobProps) => {
   const knobRef = useRef<HTMLDivElement>(null);
 
-  const sliderStateRef = useRef<Juce.SliderState>(null);
-  const isDragging = useRef(false);
-
-  // Load SliderState from JUCE and set up listener
-  useEffect(() => {
-    const state = Juce.getSliderState(paramId);
-    console.log(`✅ SliderState for ${paramId} obtained:`, state); 
-    sliderStateRef.current = state;
-
-    const listener = () => {
-      if (!isDragging.current) {
-        const scaledValue = state.getScaledValue();
-        console.log(`🔔 ${paramId} scaled value from JUCE:`, scaledValue);
-        setValue(parseFloat(scaledValue.toFixed(decimalPlaces)));
-      }
-    };
-
-    const listenerId = state.valueChangedEvent.addListener(listener);
-    listener(); // 초기 상태 동기화
-
-    // Cleanup
-    return () => state.valueChangedEvent.removeListener(listenerId);
-  }, [paramId, min, max, isLog, decimalPlaces]);
-
-  // Drag handling
-  const onMouseDown = (e: React.MouseEvent) => {
-    if (isEditing || !sliderStateRef.current) return;
-    
-    isDragging.current = true;
-    const startY = e.clientY;
-    const startNorm = sliderStateRef.current.getNormalisedValue();
-
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const deltaY = startY - moveEvent.clientY;
-      const sensitivity = 200; 
-      const deltaNorm = deltaY / sensitivity;
-      const newNorm = Math.max(0, Math.min(1, startNorm + deltaNorm));
-
-      // UI 즉시 업데이트 (React State)
-      const realVal = isLog ? linearToLog(newNorm, min, max) : min + newNorm * (max - min);
-      const fixedVal = parseFloat(realVal.toFixed(decimalPlaces));
-      setValue(fixedVal);
-
-      // 백엔드 전송
-      const normalizedFixedVal = (fixedVal - min) / (max - min);
-      sliderStateRef.current?.setNormalisedValue(normalizedFixedVal);
-      if (import.meta.env.DEV) {  // Only log in development
-        console.log('realVal:', realVal, 'fixedVal:', fixedVal, 'normalizedFixedVal:', normalizedFixedVal);
-      }
-    };
-
-    const onMouseUp = () => {
-      isDragging.current = false;
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-  };
-
-  const handleManualInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && sliderStateRef.current) {
-      const val = parseFloat((e.target as HTMLInputElement).value);
-      if (!isNaN(val)) {
-        const clamped = Math.max(min, Math.min(max, val));
-        const norm = isLog ? logToLinear(clamped, min, max) : (clamped - min) / (max - min);
-        sliderStateRef.current.setNormalisedValue(norm);
-        setValue(parseFloat(clamped.toFixed(decimalPlaces)));
-      }
-      setIsEditing(false);
-    }
-  };
+  const {
+    value,
+    isEditing,
+    setIsEditing,
+    handleManualInput,
+    onMouseDown,  // drag handling for knob
+  } = useJuceKnob(paramId, min, max, isLog, decimalPlaces, initialValue);
 
   // 시각적 표현을 위한 퍼센트 계산
   const percent = isLog ? logToLinear(value, min, max) : (value - min) / (max - min);
@@ -106,8 +32,8 @@ const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlac
   return (
     <div className="flex flex-col items-center gap-3">
       <span className="text-[10px] font-black tracking-widest text-cyan-500 uppercase select-none">{label}</span>
-      
-      <div 
+
+      <div
         ref={knobRef}
         onMouseDown={onMouseDown}
         className="relative w-28 h-28 rounded-full bg-slate-900 shadow-[5px_5px_15px_#050505,-5px_-5px_15px_#1a1a1a] flex items-center justify-center cursor-ns-resize group"
@@ -115,7 +41,7 @@ const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlac
         {/* Progress Ring (SVG) */}
         <svg className="absolute w-full h-full" viewBox="0 0 100 100" style={{ transform: `rotate(-225deg)` }}>
           <circle cx="50" cy="50" r="45" fill="none" stroke="#1e293b" strokeWidth="4" />
-          <circle 
+          <circle
             cx="50" cy="50" r="45" fill="none" stroke="#06b6d4" strokeWidth="4"
             strokeDasharray={`${211.5 * percent} ${282.7 - 211.5 * percent}`}
             strokeLinecap="round"
@@ -131,7 +57,7 @@ const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlac
 
           {/* Value Text */}
           {isEditing ? (
-            <input 
+            <input
               autoFocus
               className="w-16 bg-transparent text-center text-white font-bold outline-none border-b border-cyan-500"
               defaultValue={value}
@@ -139,7 +65,7 @@ const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlac
               onBlur={() => setIsEditing(false)}
             />
           ) : (
-            <span 
+            <span
               onDoubleClick={() => setIsEditing(true)}
               className="text-lg font-black text-slate-100 cursor-text tracking-tighter select-none"
             >
@@ -169,13 +95,12 @@ export default function LPFUI() {
           onClick={() => {
             const nextBypassState = !isBypassed;
             setIsBypassed(nextBypassState);
-            // sendParamToJuce('bypass', nextBypassState ? 1 : 0);
+            // send param to juce
           }}
-          className={`h-8 w-24 px-3 text-[10px] font-black tracking-[0.2em] uppercase transition-all ${
-            isBypassed
-              ? 'border-slate-700 bg-slate-900 text-white hover:bg-slate-800'
-              : 'border-cyan-300 bg-slate-900 text-white shadow-[0_0_12px_rgba(34,211,238,0.25)] hover:bg-slate-800'
-          }`}
+          className={`h-8 w-24 px-3 text-[10px] font-black tracking-[0.2em] uppercase transition-all ${isBypassed
+            ? 'border-slate-700 bg-slate-900 text-white hover:bg-slate-800'
+            : 'border-cyan-300 bg-slate-900 text-white shadow-[0_0_12px_rgba(34,211,238,0.25)] hover:bg-slate-800'
+            }`}
         >
           {isBypassed ? 'Bypass' : 'Active'}
         </Button>
@@ -183,22 +108,20 @@ export default function LPFUI() {
 
       {/* Control Section */}
       <div className="flex gap-16 items-center flex-1">
-        <Knob 
-          label="Cutoff" 
+        <Knob
+          label="Cutoff"
           paramId="freqHz"
-          min={20} 
-          max={22050} 
-          initialValue={1000} 
-          unit="Hz" 
+          min={20}
+          max={22050}
+          unit="Hz"
           isLog={true}
         />
-        <Knob 
-          label="Resonance" 
+        <Knob
+          label="Resonance"
           paramId="resonance"
-          min={0.0} 
-          max={12.0} 
-          initialValue={0.7} 
-          unit="dB" 
+          min={0.0}
+          max={12.0}
+          unit="dB"
           decimalPlaces={1}
         />
       </div>

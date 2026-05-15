@@ -151,11 +151,5 @@ declare global {
         __juce__platform: string[];
       };
     };
-    // Juce: {
-    //   getSliderState: typeof getSliderState;
-    //   getToggleState: typeof getToggleState;
-    //   getComboBoxState: typeof getComboBoxState;
-    //   getNativeFunction: typeof getNativeFunction;
-    // };
   }
 }
