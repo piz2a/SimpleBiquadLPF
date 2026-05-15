@@ -7,9 +7,9 @@ SimpleFilterAudioProcessor::SimpleFilterAudioProcessor()
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                       .withInput  ("Input",  AudioChannelSet::stereo(), true)
                       #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+                       .withOutput ("Output", AudioChannelSet::stereo(), true)
                      #endif
                        ), state(*this, nullptr, "parameters", createParameters())
 #endif
@@ -21,7 +21,7 @@ SimpleFilterAudioProcessor::~SimpleFilterAudioProcessor()
 }
 
 //==============================================================================
-const juce::String SimpleFilterAudioProcessor::getName() const
+const String SimpleFilterAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
@@ -73,12 +73,12 @@ void SimpleFilterAudioProcessor::setCurrentProgram (int index)
 {
 }
 
-const juce::String SimpleFilterAudioProcessor::getProgramName (int index)
+const String SimpleFilterAudioProcessor::getProgramName (int index)
 {
     return {};
 }
 
-void SimpleFilterAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void SimpleFilterAudioProcessor::changeProgramName (int index, const String& newName)
 {
 }
 
@@ -112,15 +112,15 @@ void SimpleFilterAudioProcessor::releaseResources()
 bool SimpleFilterAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
+    ignoreUnused (layouts);
     return true;
   #else
     // This is the place where you check if the layout is supported.
     // In this template code we only support mono or stereo.
     // Some plugin hosts, such as certain GarageBand versions, will only
     // load plugins that support stereo bus layouts.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    if (layouts.getMainOutputChannelSet() != AudioChannelSet::mono()
+     && layouts.getMainOutputChannelSet() != AudioChannelSet::stereo())
         return false;
 
     // This checks if the input layout matches the output layout
@@ -134,9 +134,9 @@ bool SimpleFilterAudioProcessor::isBusesLayoutSupported (const BusesLayout& layo
 }
 #endif
 
-void SimpleFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void SimpleFilterAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
 {
-    juce::ScopedNoDenormals noDenormals;
+    ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
     auto numSamples = buffer.getNumSamples();
@@ -158,7 +158,7 @@ void SimpleFilterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     smoothedFreq.skip(numSamples - 1);
 
     const float res = resonanceParam->load();
-    const float q = 0.707f * juce::Decibels::decibelsToGain (res);  // Convert dB to linear gain. 0 dB = 0.707
+    const float q = 0.707f * Decibels::decibelsToGain (res);  // Convert dB to linear gain. 0 dB = 0.707
     smoothedQ.setTargetValue(q);
     float currentQ = smoothedQ.getNextValue();
     smoothedQ.skip(numSamples - 1);
@@ -208,13 +208,13 @@ bool SimpleFilterAudioProcessor::hasEditor() const
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* SimpleFilterAudioProcessor::createEditor()
+AudioProcessorEditor* SimpleFilterAudioProcessor::createEditor()
 {
     return new SimpleFilterAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void SimpleFilterAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void SimpleFilterAudioProcessor::getStateInformation (MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
@@ -229,30 +229,30 @@ void SimpleFilterAudioProcessor::setStateInformation (const void* data, int size
 
 //==============================================================================
 // This creates new instances of the plugin..
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new SimpleFilterAudioProcessor();
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout SimpleFilterAudioProcessor::createParameters()
+AudioProcessorValueTreeState::ParameterLayout SimpleFilterAudioProcessor::createParameters()
 {
     return {
-        std::make_unique<juce::AudioParameterFloat> (  // why use make_unique? because the createParameters function needs to return a ParameterLayout object, which is a vector of unique pointers to RangedAudioParameter objects. By using make_unique, we can create a new AudioParameterFloat object and automatically wrap it in a unique pointer, which is then added to the ParameterLayout vector.
-            juce::ParameterID { "freqHz", 1 },
+        std::make_unique<AudioParameterFloat> (  // why use make_unique? because the createParameters function needs to return a ParameterLayout object, which is a vector of unique pointers to RangedAudioParameter objects. By using make_unique, we can create a new AudioParameterFloat object and automatically wrap it in a unique pointer, which is then added to the ParameterLayout vector.
+            ParameterID { "freqHz", 1 },
             "Frequency",
             20.0f,
             20000.0f,
             220.0f
         ),
-        std::make_unique<juce::AudioParameterFloat> (  // why use make_unique? because the createParameters function needs to return a ParameterLayout object, which is a vector of unique pointers to RangedAudioParameter objects. By using make_unique, we can create a new AudioParameterFloat object and automatically wrap it in a unique pointer, which is then added to the ParameterLayout vector.
-            juce::ParameterID { "resonance", 1 },
+        std::make_unique<AudioParameterFloat> (
+            ParameterID { "resonance", 1 },
             "Resonance",
             0.0f,
             12.0f,
             0.0f
         ),
-        std::make_unique<juce::AudioParameterBool> (
-            juce::ParameterID { "play", 1 },
+        std::make_unique<AudioParameterBool> (
+            ParameterID { "play", 1 },
             "Play",
             true
         )

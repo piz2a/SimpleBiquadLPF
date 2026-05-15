@@ -3,31 +3,42 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 
+using namespace juce;
+
 //==============================================================================
 /**
 */
-class SimpleFilterAudioProcessorEditor  : public juce::AudioProcessorEditor, private juce::Slider::Listener  // [2]
+class SimpleFilterAudioProcessorEditor  : public AudioProcessorEditor, private Slider::Listener  // [2]
 {
 public:
     SimpleFilterAudioProcessorEditor (SimpleFilterAudioProcessor&);
     ~SimpleFilterAudioProcessorEditor() override;
 
     //==============================================================================
-    void paint (juce::Graphics&) override;
+    void paint (Graphics&) override;
     void resized() override;
-    void sliderValueChanged (juce::Slider* slider) override;  // [3]
+    void sliderValueChanged (Slider* slider) override;  // [3]
 
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     SimpleFilterAudioProcessor& audioProcessor;
-    juce::WebBrowserComponent webComponent;
 
-    juce::Slider frequencySlider;
-    juce::TextButton playButton;
-    juce::Label frequencyLabel {"FrequencyLabel", "Frequency"};
-    juce::AudioProcessorValueTreeState::SliderAttachment freqSliderAttachment;
-    juce::AudioProcessorValueTreeState::ButtonAttachment playButtonAttachment;
+    Slider frequencySlider;
+    TextButton playButton;
+    Label frequencyLabel {"FrequencyLabel", "Frequency"};
+    AudioProcessorValueTreeState::SliderAttachment freqSliderAttachment;
+    AudioProcessorValueTreeState::ButtonAttachment playButtonAttachment;
+    WebSliderRelay freqRelay { "freqHz" };
+    WebSliderParameterAttachment freqAttachment {
+        *audioProcessor.getState().getParameter("freqHz"), freqRelay, nullptr
+    };
+    WebSliderRelay resonanceRelay { "resonance" };
+    WebSliderParameterAttachment resonanceAttachment {
+        *audioProcessor.getState().getParameter("resonance"), resonanceRelay, nullptr
+    };
+
+    WebBrowserComponent webComponent;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleFilterAudioProcessorEditor)
 };

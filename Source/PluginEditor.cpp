@@ -7,45 +7,43 @@ SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor (SimpleFilter
     : AudioProcessorEditor (&p),audioProcessor (p),
       freqSliderAttachment(audioProcessor.getState(), "freqHz", frequencySlider),
       playButtonAttachment(audioProcessor.getState(), "play", playButton),
-      webComponent (juce::WebBrowserComponent::Options{}
+      webComponent (WebBrowserComponent::Options{}
+        .withBackend (WebBrowserComponent::Options::Backend::webview2)
+        .withWinWebView2Options (WebBrowserComponent::Options::WinWebView2{}
+        .withUserDataFolder (File::getSpecialLocation (File::SpecialLocationType::tempDirectory)))
         .withResourceProvider ([this](const auto& url) {
-            return juce::WebBrowserComponent::Resource{ /* 로컬 파일 처리 로직 */ };
+            return WebBrowserComponent::Resource{ /* 로컬 파일 처리 로직 */ };
         })
-        // 'updateParameter'라는 이름의 함수를 브라우저에 노출합니다.
-        .withNativeFunction ("updateParameter", [this] (const juce::var& args, auto completion) {
-            if (args.size() >= 2) {
-                auto paramID = args[0].toString();
-                auto newValue = (float) args[1];
-
-                // APVTS에서 해당 파라미터를 찾아 값을 업데이트합니다.
-                if (auto* param = audioProcessor.getState().getParameter(paramID)) {
-                    // 오디오 스레드에 안전하게 값을 알립니다.
-                    param->setValueNotifyingHost(newValue);
-                }
-            }
-            // 성공 여부를 JS에 다시 전달할 수도 있습니다.
-            completion (juce::var (true));
-        }))
+        .withOptionsFrom (freqRelay)
+        .withOptionsFrom (resonanceRelay)
+        .withNativeIntegrationEnabled() // Necessary
+    )
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     addAndMakeVisible (webComponent);
+#if JUCE_DEBUG
+    // Debug mode: Load from local development server for hot-reloading
     webComponent.goToURL ("http://localhost:5173");
+#else
+    // Release mode: Load from bundled resources
+    webComponent.goToURL (WebBrowserComponent::getResourceProviderRoot());
+#endif
     
     // This is where our plugin’s editor size is set.
     setSize (480, 320);
     
     /*
-    frequencySlider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
-    frequencySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 50);
+    frequencySlider.setSliderStyle(Slider::SliderStyle::LinearVertical);
+    frequencySlider.setTextBoxStyle(Slider::TextBoxBelow, true, 100, 50);
     // frequencySlider.setRange(0.0f, 1.0f, 0.01f);
     addAndMakeVisible(frequencySlider);
     
     playButton.setButtonText("Active");
-    playButton.setToggleState(true, juce::NotificationType::dontSendNotification);
+    playButton.setToggleState(true, NotificationType::dontSendNotification);
     playButton.setClickingTogglesState(true);
-    playButton.setColour(juce::TextButton::ColourIds::buttonOnColourId, juce::Colours::green);
-    playButton.setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colours::red);
+    playButton.setColour(TextButton::ColourIds::buttonOnColourId, Colours::green);
+    playButton.setColour(TextButton::ColourIds::buttonColourId, Colours::red);
     playButton.onClick = [this]()
     {
         // change the state of the button when it's clicked
@@ -54,7 +52,7 @@ SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor (SimpleFilter
     };
     addAndMakeVisible(playButton);
     
-    frequencyLabel.setColour (juce::Label::ColourIds::outlineColourId, juce::Colours::white);
+    frequencyLabel.setColour (Label::ColourIds::outlineColourId, Colours::white);
     addAndMakeVisible(frequencyLabel);
     */
 }
@@ -65,7 +63,7 @@ SimpleFilterAudioProcessorEditor::~SimpleFilterAudioProcessorEditor()
 }
 
 //==============================================================================
-void SimpleFilterAudioProcessorEditor::paint (juce::Graphics& g)
+void SimpleFilterAudioProcessorEditor::paint (Graphics& g)
 {
 }
 
@@ -81,6 +79,6 @@ void SimpleFilterAudioProcessorEditor::resized()
     playButton.setBounds(getWidth() - 120, 30, 100, 30);
 }
 
-void SimpleFilterAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
+void SimpleFilterAudioProcessorEditor::sliderValueChanged (Slider* slider)
 {
 }

@@ -2,8 +2,7 @@
 
 void SimpleFilterChannel::setCoefficients()
 {
-    // Biquad LPF
-    // setCoefficients 내부
+    // Biquad LPF: hard coded coefficients calculation
     const float w0 = 2.0f * juce::MathConstants<float>::pi * cutoffFrequency / currentSampleRate;
     const float alpha = std::sin(w0) / (2.0f * q);
     const float a_0 = 1.0f + alpha;

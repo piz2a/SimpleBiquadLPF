@@ -1,19 +1,8 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import * as Juce from './juce';
 
-// JUCE 통신용 스로틀 유틸리티
-function useThrottle(callback: (...args: any[]) => void, delay: number) {
-  const lastCall = useRef<number>(0);
-  return useCallback((...args: any[]) => {
-    const now = Date.now();
-    if (now - lastCall.current >= delay) {
-      lastCall.current = now;
-      callback(...args);
-    }
-  }, [callback, delay]);
-}
-
-// 로그 스케일 변환 수식: $f = f_{min} \cdot (f_{max}/f_{min})^p$
+// 로그 스케일 변환 수식
 const linearToLog = (p: number, min: number, max: number) => 
   min * Math.pow(max / min, p);
 
@@ -22,49 +11,68 @@ const logToLinear = (f: number, min: number, max: number) =>
 
 interface KnobProps {
   label: string;
+  paramId: string; // JUCE 파라미터 ID 추가
   min: number;
   max: number;
   initialValue: number;
   unit: string;
   isLog?: boolean;
-  onUpdate: (val: number) => void;
   decimalPlaces?: number;
 }
 
-const Knob = ({ label, min, max, initialValue, unit, isLog, onUpdate, decimalPlaces = 0 }: KnobProps) => {
+const Knob = ({ label, paramId, min, max, initialValue, unit, isLog, decimalPlaces = 0 }: KnobProps) => {
   const [value, setValue] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
   const knobRef = useRef<HTMLDivElement>(null);
-  const startY = useRef(0);
-  const startVal = useRef(0);
+  
+  // JUCE Slider State 레퍼런스
+  const sliderStateRef = useRef<any>(null);
+  const isDragging = useRef(false);
 
-  const updateVal = useCallback((newVal: number) => {
-    const clamped = Math.max(min, Math.min(max, newVal));
-    const fixed = parseFloat(clamped.toFixed(decimalPlaces));
-    setValue(fixed);
-    onUpdate(fixed);
-  }, [min, max, decimalPlaces, onUpdate]);
+  useEffect(() => {
+    const state = Juce.getSliderState(paramId);
+    console.log(`✅ SliderState for ${paramId} obtained:`, state); 
+    sliderStateRef.current = state;
 
-  const onMouseDown = (e: React.MouseEvent) => {
-    if (isEditing) return;
-    startY.current = e.clientY;
-    // 로그 스케일일 경우 선형적인 0-1 비율로 변환하여 시작점 저장
-    startVal.current = isLog ? logToLinear(value, min, max) : (value - min) / (max - min);
-
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const deltaY = startY.current - moveEvent.clientY;
-      const sensitivity = 200; // 200px 드래그 시 전체 범위 이동
-      const deltaPercent = deltaY / sensitivity;
-      const newPercent = Math.max(0, Math.min(1, startVal.current + deltaPercent));
-
-      if (isLog) {
-        updateVal(linearToLog(newPercent, min, max));
-      } else {
-        updateVal(min + newPercent * (max - min));
+    const listener = () => {
+      if (!isDragging.current) {
+        const norm = state.getNormalisedValue();
+        const realVal = isLog ? linearToLog(norm, min, max) : min + norm * (max - min);
+        setValue(parseFloat(realVal.toFixed(decimalPlaces)));
       }
     };
 
+    const listenerId = state.valueChangedEvent.addListener(listener);
+    listener(); // 초기 상태 동기화
+
+    // Cleanup
+    return () => state.valueChangedEvent.removeListener(listenerId);
+  }, [paramId, min, max, isLog, decimalPlaces]);
+
+  // 2. 드래그 조작 로직
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (isEditing || !sliderStateRef.current) return;
+    
+    isDragging.current = true;
+    const startY = e.clientY;
+    const startNorm = sliderStateRef.current.getNormalisedValue();
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = startY - moveEvent.clientY;
+      const sensitivity = 200; 
+      const deltaNorm = deltaY / sensitivity;
+      const newNorm = Math.max(0, Math.min(1, startNorm + deltaNorm));
+
+      // 백엔드 전송
+      sliderStateRef.current.setNormalisedValue(newNorm);
+
+      // UI 즉시 업데이트 (React State)
+      const realVal = isLog ? linearToLog(newNorm, min, max) : min + newNorm * (max - min);
+      setValue(parseFloat(realVal.toFixed(decimalPlaces)));
+    };
+
     const onMouseUp = () => {
+      isDragging.current = false;
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
@@ -74,20 +82,25 @@ const Knob = ({ label, min, max, initialValue, unit, isLog, onUpdate, decimalPla
   };
 
   const handleManualInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && sliderStateRef.current) {
       const val = parseFloat((e.target as HTMLInputElement).value);
-      if (!isNaN(val)) updateVal(val);
+      if (!isNaN(val)) {
+        const clamped = Math.max(min, Math.min(max, val));
+        const norm = isLog ? logToLinear(clamped, min, max) : (clamped - min) / (max - min);
+        sliderStateRef.current.setNormalisedValue(norm);
+        setValue(parseFloat(clamped.toFixed(decimalPlaces)));
+      }
       setIsEditing(false);
     }
   };
 
-  // 노브 회전 각도 계산 (-135도 ~ 135도)
+  // 시각적 표현을 위한 퍼센트 계산
   const percent = isLog ? logToLinear(value, min, max) : (value - min) / (max - min);
   const rotation = percent * 270 - 135;
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <span className="text-[10px] font-black tracking-widest text-cyan-500 uppercase select-none" draggable={false}>{label}</span>
+      <span className="text-[10px] font-black tracking-widest text-cyan-500 uppercase select-none">{label}</span>
       
       <div 
         ref={knobRef}
@@ -107,11 +120,7 @@ const Knob = ({ label, min, max, initialValue, unit, isLog, onUpdate, decimalPla
 
         {/* Knob Face */}
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-950 shadow-lg flex flex-col items-center justify-center relative">
-          {/* Indicator Dot */}
-          <div 
-            className="absolute inset-0 transition-none"
-            style={{ transform: `rotate(${rotation}deg)` }}
-          >
+          <div className="absolute inset-0 transition-none" style={{ transform: `rotate(${rotation}deg)` }}>
             <div className="absolute top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#22d3ee]" />
           </div>
 
@@ -132,7 +141,7 @@ const Knob = ({ label, min, max, initialValue, unit, isLog, onUpdate, decimalPla
               {value}
             </span>
           )}
-          <span className="text-[8px] font-bold text-slate-500 select-none" draggable={false}>{unit}</span>
+          <span className="text-[8px] font-bold text-slate-500 select-none">{unit}</span>
         </div>
       </div>
     </div>
@@ -142,20 +151,11 @@ const Knob = ({ label, min, max, initialValue, unit, isLog, onUpdate, decimalPla
 export default function LPFUI() {
   const [isBypassed, setIsBypassed] = useState(false);
 
-  const sendParamToJuce = useThrottle((paramId: string, value: number) => {
-    if (window.__juce_backend) {
-      window.__juce_backend.callNativeFunction("updateParameter", [paramId, value]);
-    } else {
-      console.log(`[JUCE] ${paramId}: ${value}`);
-    }
-  }, 16);
-
   return (
-    <div className="w-[480px] h-[320px] bg-black bg-[radial-gradient(circle_at_center,_#111_0%,_#000_100%)] flex flex-col items-center justify-between p-6 overflow-hidden font-sans border border-slate-800 select-none" onDragStart={(event) => event.preventDefault()}>
+    <div className="w-[480px] h-[320px] bg-black bg-[radial-gradient(circle_at_center,_#111_0%,_#000_100%)] flex flex-col items-center justify-between p-6 overflow-hidden font-sans border border-slate-800 select-none">
       
-      {/* Cyberpunk Header */}
       <div className="w-full flex justify-between items-center border-b border-cyan-900/30 pb-2">
-        <h1 className="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)] select-none" draggable={false}>
+        <h1 className="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]">
           SimpleBiquadLPF
         </h1>
         <Button
@@ -165,12 +165,12 @@ export default function LPFUI() {
           onClick={() => {
             const nextBypassState = !isBypassed;
             setIsBypassed(nextBypassState);
-            sendParamToJuce('bypass', nextBypassState ? 1 : 0);
+            // sendParamToJuce('bypass', nextBypassState ? 1 : 0);
           }}
           className={`h-8 w-24 px-3 text-[10px] font-black tracking-[0.2em] uppercase transition-all ${
             isBypassed
-              ? 'border-slate-700 bg-slate-900 text-white hover:bg-slate-800 hover:text-white'
-              : 'border-cyan-300 bg-slate-900 text-white shadow-[0_0_12px_rgba(34,211,238,0.25)] hover:bg-slate-800 hover:border-cyan-200 hover:text-white'
+              ? 'border-slate-700 bg-slate-900 text-white hover:bg-slate-800'
+              : 'border-cyan-300 bg-slate-900 text-white shadow-[0_0_12px_rgba(34,211,238,0.25)] hover:bg-slate-800'
           }`}
         >
           {isBypassed ? 'Bypass' : 'Active'}
@@ -181,28 +181,28 @@ export default function LPFUI() {
       <div className="flex gap-16 items-center flex-1">
         <Knob 
           label="Cutoff" 
+          paramId="freqHz"
           min={20} 
           max={22050} 
           initialValue={1000} 
           unit="Hz" 
           isLog={true}
-          onUpdate={(v) => sendParamToJuce("freqHz", v)} 
         />
         <Knob 
           label="Resonance" 
+          paramId="resonance"
           min={0.0} 
           max={12.0} 
           initialValue={0.7} 
           unit="dB" 
           decimalPlaces={1}
-          onUpdate={(v) => sendParamToJuce("resonance", v)} 
         />
       </div>
 
       {/* Footer Decoration */}
       <div className="w-full flex justify-between text-[8px] font-mono text-slate-600 tracking-[0.3em] uppercase">
-        <span className="select-none" draggable={false}>2026 Jihoaudio</span>
-        <span className="select-none" draggable={false}>ahnjiho.com</span>
+        <span>2026 Jihoaudio</span>
+        <span>ahnjiho.com</span>
       </div>
     </div>
   );
