@@ -16,7 +16,7 @@ ui/dist-ssr
 ui/*.local
 
 # Editor directories and files
-.vscode
+.ui/.vscode
 ui/.vscode
 !.vscode/extensions.json
 !.vscode/launch.json

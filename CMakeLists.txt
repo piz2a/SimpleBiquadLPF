@@ -18,11 +18,6 @@ juce_add_plugin(SimpleFilter
     VST3_CAN_REPLACE_VST2 FALSE
 )
 
-file(GLOB_RECURSE UI_ASSETS
-    "ui/dist/index.html"
-    "ui/dist/assets/*"
-)
-
 # 소스 파일 등록 (.jucer에 있던 파일들)
 target_sources(SimpleFilter PRIVATE
     Source/PluginProcessor.cpp
@@ -33,12 +28,32 @@ target_sources(SimpleFilter PRIVATE
     Source/SimpleFilterChannel.h
 )
 
-juce_add_binary_data(UIResources
-    SOURCES ${UI_ASSETS}
+set(WEBVIEW_FILES_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ui/dist")
+set(TARGET_WEBVIEW_FILES_ZIP_PATH "${CMAKE_BINARY_DIR}/webview_files.zip")
+get_filename_component(PUBLIC_PATH "${WEBVIEW_FILES_SOURCE_DIR}" ABSOLUTE)
+file(
+    ARCHIVE_CREATE
+    OUTPUT
+    ${TARGET_WEBVIEW_FILES_ZIP_PATH}
+    PATHS
+    "${PUBLIC_PATH}"
+    FORMAT
+    zip
+    VERBOSE
+)
+
+# Pass the prefix of the zipped files (e.g., "public/") to C++
+cmake_path(GET PUBLIC_PATH FILENAME ZIPPED_FILES_PREFIX)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ZIPPED_FILES_PREFIX="${ZIPPED_FILES_PREFIX}/")
+
+juce_add_binary_data(WebViewFiles
+    HEADER_NAME WebViewFiles.h
+    NAMESPACE webview_files
+    SOURCES ${TARGET_WEBVIEW_FILES_ZIP_PATH}
 )
 
 # 사용 중인 JUCE 모듈 링크
-target_link_libraries(SimpleFilter PRIVATE UIResources
+target_link_libraries(SimpleFilter PRIVATE WebViewFiles
     juce::juce_audio_utils
     juce::juce_audio_processors
     juce::juce_gui_extra

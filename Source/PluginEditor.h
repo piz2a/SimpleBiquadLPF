@@ -18,6 +18,7 @@ public:
     void paint (Graphics&) override;
     void resized() override;
     void sliderValueChanged (Slider* slider) override;  // [3]
+    auto getResource(const juce::String& url) const -> std::optional<juce::WebBrowserComponent::Resource>;
 
 private:
     // This reference is provided as a quick way for your editor to
