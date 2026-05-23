@@ -66,17 +66,39 @@ namespace
                                           false};
         juce::ZipFile zipFile{zipStream};
 
-        // print all entries in the zip file for debugging
-        std::cout << "Zip file contains the following entries:" << std::endl;
-        for (int i = 0; i < zipFile.getNumEntries(); ++i)
+        // 1. Zip 파일 내부의 실제 루트 경로(prefix)를 한 번만 계산해서 캐싱합니다.
+        static juce::String basePrefix = "";
+        static bool isPrefixDetermined = false;
+
+        if (!isPrefixDetermined)
         {
-            if (const auto *entry = zipFile.getEntry(i))
+            int minLength = std::numeric_limits<int>::max();
+            for (int i = 0; i < zipFile.getNumEntries(); ++i)
             {
-                std::cout << " - " << entry->filename << std::endl;
+                if (const auto *entry = zipFile.getEntry(i))
+                {
+                    juce::String name = entry->filename;
+                    
+                    // 가장 경로가 짧은 index.html을 찾습니다. (dir/index.html 같은 중첩 파일 필터링)
+                    if (name.endsWithIgnoreCase("index.html") && name.length() < minLength)
+                    {
+                        minLength = name.length();
+                        // "index.html"의 길이(10)만큼 잘라내어 prefix만 남깁니다.
+                        // 예: "../ui/dist/index.html" -> "../ui/dist/"
+                        basePrefix = name.dropLastCharacters(10); 
+                    }
+                }
             }
+            // Debug: print the determined prefix
+            std::cout << "Determined base prefix for web resources: '" << basePrefix << "'" << std::endl;
+            isPrefixDetermined = true;
         }
 
-        if (auto *zipEntry = zipFile.getEntry(ZIPPED_FILES_PREFIX + filepath))
+        // 2. 정확히 타겟팅된 전체 경로 생성
+        juce::String targetPath = basePrefix + filepath;
+
+        // 3. 해당 경로의 파일 추출
+        if (auto *zipEntry = zipFile.getEntry(targetPath))
         {
             const std::unique_ptr<juce::InputStream> entryStream{
                 zipFile.createStreamForEntry(*zipEntry)};
@@ -90,6 +112,7 @@ namespace
             return streamToVector(*entryStream);
         }
 
+        std::cout << "Resource " << targetPath << " not found in zip" << std::endl;
         return {};
     }
 
