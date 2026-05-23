@@ -18,6 +18,11 @@ juce_add_plugin(SimpleFilter
     VST3_CAN_REPLACE_VST2 FALSE
 )
 
+file(GLOB_RECURSE UI_ASSETS
+    "ui/dist/index.html"
+    "ui/dist/assets/*"
+)
+
 # 소스 파일 등록 (.jucer에 있던 파일들)
 target_sources(SimpleFilter PRIVATE
     Source/PluginProcessor.cpp
@@ -28,8 +33,12 @@ target_sources(SimpleFilter PRIVATE
     Source/SimpleFilterChannel.h
 )
 
+juce_add_binary_data(UIResources
+    SOURCES ${UI_ASSETS}
+)
+
 # 사용 중인 JUCE 모듈 링크
-target_link_libraries(SimpleFilter PRIVATE
+target_link_libraries(SimpleFilter PRIVATE UIResources
     juce::juce_audio_utils
     juce::juce_audio_processors
     juce::juce_gui_extra

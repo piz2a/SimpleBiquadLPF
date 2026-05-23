@@ -23,13 +23,13 @@ SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor (SimpleFilter
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     addAndMakeVisible (webComponent);
-#if JUCE_DEBUG
-    // Debug mode: Load from local development server for hot-reloading
-    webComponent.goToURL ("http://localhost:5173");
-#else
-    // Release mode: Load from bundled resources
-    webComponent.goToURL (WebBrowserComponent::getResourceProviderRoot());
-#endif
+    #if JUCE_DEBUG
+        // Debug mode: Load from local development server for hot-reloading
+        webComponent.goToURL ("http://localhost:5173");
+    #else
+        // Release mode: Load from bundled resources
+        webComponent.goToURL (WebBrowserComponent::getResourceProviderRoot());
+    #endif
     
     // This is where our plugin’s editor size is set.
     setSize (480, 320);

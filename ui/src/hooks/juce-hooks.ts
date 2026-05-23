@@ -1,6 +1,6 @@
 import * as Juce from '../juce';
 import { useState, useEffect, useRef } from 'react';
-import { linearToLog, logToLinear } from '../utils/scale-transformation';
+import { linearToLog } from '../utils/scale-transformation';
 
 export function useJuceSlider(paramId: string, min: number, max: number, isLog = false, decimalPlaces = 0, initialValue = 0) {
     const [value, setValue] = useState(initialValue);
