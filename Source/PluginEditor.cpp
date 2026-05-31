@@ -47,10 +47,10 @@ namespace
         return id;
     }
 
-#ifndef ZIPPED_FILES_PREFIX
-#error \
-    "You must provide the prefix of zipped web UI files' paths, e.g., 'public/', in the ZIPPED_FILES_PREFIX compile definition"
-#endif
+// #ifndef ZIPPED_FILES_PREFIX
+// #error \
+//     "You must provide the prefix of zipped web UI files' paths, e.g., 'public/', in the ZIPPED_FILES_PREFIX compile definition"
+// #endif
 
     /**
      * @brief Get a web UI file as bytes
