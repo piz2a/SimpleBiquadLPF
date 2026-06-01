@@ -8,11 +8,11 @@ using namespace juce;
 //==============================================================================
 /**
 */
-class SimpleFilterAudioProcessorEditor  : public AudioProcessorEditor, private Slider::Listener  // [2]
+class WeatherSoundAudioProcessorEditor  : public AudioProcessorEditor, private Slider::Listener  // [2]
 {
 public:
-    SimpleFilterAudioProcessorEditor (SimpleFilterAudioProcessor&);
-    ~SimpleFilterAudioProcessorEditor() override;
+    WeatherSoundAudioProcessorEditor (WeatherSoundAudioProcessor&);
+    ~WeatherSoundAudioProcessorEditor() override;
 
     //==============================================================================
     void paint (Graphics&) override;
@@ -23,7 +23,7 @@ public:
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
-    SimpleFilterAudioProcessor& audioProcessor;
+    WeatherSoundAudioProcessor& audioProcessor;
 
     Slider frequencySlider;
     TextButton bypassButton;
@@ -45,5 +45,5 @@ private:
 
     WebBrowserComponent webComponent;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleFilterAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WeatherSoundAudioProcessorEditor)
 };

@@ -116,12 +116,12 @@ namespace
         return {};
     }
 
-    constexpr auto LOCAL_DEV_SERVER_ADDRESS = "http://127.0.0.1:5173";
+    constexpr auto LOCAL_DEV_SERVER_ADDRESS = "http://localhost:5173";
 } // namespace
 
 //==============================================================================
 // CONSTRUCTOR
-SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor(SimpleFilterAudioProcessor &p)
+WeatherSoundAudioProcessorEditor::WeatherSoundAudioProcessorEditor(WeatherSoundAudioProcessor &p)
     : AudioProcessorEditor(&p), audioProcessor(p),
       freqSliderAttachment(audioProcessor.getState(), "freqHz", frequencySlider),
       bypassButtonAttachment(audioProcessor.getState(), "bypass", bypassButton),
@@ -177,16 +177,16 @@ SimpleFilterAudioProcessorEditor::SimpleFilterAudioProcessorEditor(SimpleFilterA
 }
 
 // DECONSTRUCTOR
-SimpleFilterAudioProcessorEditor::~SimpleFilterAudioProcessorEditor()
+WeatherSoundAudioProcessorEditor::~WeatherSoundAudioProcessorEditor()
 {
 }
 
 //==============================================================================
-void SimpleFilterAudioProcessorEditor::paint(Graphics &g)
+void WeatherSoundAudioProcessorEditor::paint(Graphics &g)
 {
 }
 
-void SimpleFilterAudioProcessorEditor::resized()
+void WeatherSoundAudioProcessorEditor::resized()
 {
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
@@ -198,11 +198,11 @@ void SimpleFilterAudioProcessorEditor::resized()
     bypassButton.setBounds(getWidth() - 120, 30, 100, 30);
 }
 
-void SimpleFilterAudioProcessorEditor::sliderValueChanged(Slider *slider)
+void WeatherSoundAudioProcessorEditor::sliderValueChanged(Slider *slider)
 {
 }
 
-auto SimpleFilterAudioProcessorEditor::getResource(const juce::String &url) const
+auto WeatherSoundAudioProcessorEditor::getResource(const juce::String &url) const
     -> std::optional<juce::WebBrowserComponent::Resource>
 {
     std::cout << "ResourceProvider called with " << url << std::endl;

@@ -9,12 +9,12 @@ using namespace juce;
 //==============================================================================
 /**
 */
-class SimpleFilterAudioProcessor  : public AudioProcessor
+class WeatherSoundAudioProcessor  : public AudioProcessor
 {
 public:
     //==============================================================================
-    SimpleFilterAudioProcessor();
-    ~SimpleFilterAudioProcessor() override;
+    WeatherSoundAudioProcessor();
+    ~WeatherSoundAudioProcessor() override;
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -61,5 +61,5 @@ private:
     std::atomic<float>* resonanceParam;
     std::atomic<float>* bypassParam;
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleFilterAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WeatherSoundAudioProcessor)
 };

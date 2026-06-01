@@ -2,7 +2,7 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-SimpleFilterAudioProcessor::SimpleFilterAudioProcessor()
+WeatherSoundAudioProcessor::WeatherSoundAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
@@ -16,17 +16,17 @@ SimpleFilterAudioProcessor::SimpleFilterAudioProcessor()
 {
 }
 
-SimpleFilterAudioProcessor::~SimpleFilterAudioProcessor()
+WeatherSoundAudioProcessor::~WeatherSoundAudioProcessor()
 {
 }
 
 //==============================================================================
-const String SimpleFilterAudioProcessor::getName() const
+const String WeatherSoundAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool SimpleFilterAudioProcessor::acceptsMidi() const
+bool WeatherSoundAudioProcessor::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -35,7 +35,7 @@ bool SimpleFilterAudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool SimpleFilterAudioProcessor::producesMidi() const
+bool WeatherSoundAudioProcessor::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -44,7 +44,7 @@ bool SimpleFilterAudioProcessor::producesMidi() const
    #endif
 }
 
-bool SimpleFilterAudioProcessor::isMidiEffect() const
+bool WeatherSoundAudioProcessor::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -53,37 +53,37 @@ bool SimpleFilterAudioProcessor::isMidiEffect() const
    #endif
 }
 
-double SimpleFilterAudioProcessor::getTailLengthSeconds() const
+double WeatherSoundAudioProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int SimpleFilterAudioProcessor::getNumPrograms()
+int WeatherSoundAudioProcessor::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
                 // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int SimpleFilterAudioProcessor::getCurrentProgram()
+int WeatherSoundAudioProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void SimpleFilterAudioProcessor::setCurrentProgram (int index)
+void WeatherSoundAudioProcessor::setCurrentProgram (int index)
 {
 }
 
-const String SimpleFilterAudioProcessor::getProgramName (int index)
+const String WeatherSoundAudioProcessor::getProgramName (int index)
 {
     return {};
 }
 
-void SimpleFilterAudioProcessor::changeProgramName (int index, const String& newName)
+void WeatherSoundAudioProcessor::changeProgramName (int index, const String& newName)
 {
 }
 
 //==============================================================================
-void SimpleFilterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void WeatherSoundAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
@@ -102,14 +102,14 @@ void SimpleFilterAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
     smoothedFreq.setCurrentAndTargetValue(frequencyParam->load());
 }
 
-void SimpleFilterAudioProcessor::releaseResources()
+void WeatherSoundAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool SimpleFilterAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool WeatherSoundAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     ignoreUnused (layouts);
@@ -134,7 +134,7 @@ bool SimpleFilterAudioProcessor::isBusesLayoutSupported (const BusesLayout& layo
 }
 #endif
 
-void SimpleFilterAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
+void WeatherSoundAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
 {
     ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -203,25 +203,25 @@ void SimpleFilterAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiB
 }
 
 //==============================================================================
-bool SimpleFilterAudioProcessor::hasEditor() const
+bool WeatherSoundAudioProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-AudioProcessorEditor* SimpleFilterAudioProcessor::createEditor()
+AudioProcessorEditor* WeatherSoundAudioProcessor::createEditor()
 {
-    return new SimpleFilterAudioProcessorEditor (*this);
+    return new WeatherSoundAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void SimpleFilterAudioProcessor::getStateInformation (MemoryBlock& destData)
+void WeatherSoundAudioProcessor::getStateInformation (MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
 }
 
-void SimpleFilterAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void WeatherSoundAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
@@ -231,10 +231,10 @@ void SimpleFilterAudioProcessor::setStateInformation (const void* data, int size
 // This creates new instances of the plugin..
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new SimpleFilterAudioProcessor();
+    return new WeatherSoundAudioProcessor();
 }
 
-AudioProcessorValueTreeState::ParameterLayout SimpleFilterAudioProcessor::createParameters()
+AudioProcessorValueTreeState::ParameterLayout WeatherSoundAudioProcessor::createParameters()
 {
     return {
         std::make_unique<AudioParameterFloat> (  // why use make_unique? because the createParameters function needs to return a ParameterLayout object, which is a vector of unique pointers to RangedAudioParameter objects. By using make_unique, we can create a new AudioParameterFloat object and automatically wrap it in a unique pointer, which is then added to the ParameterLayout vector.

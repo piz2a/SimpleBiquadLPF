@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.15...4.2) # for CMake 3.15+ features, but keep it compatible with older versions
-project(SimpleFilter VERSION 0.0.1)
+project(WeatherSound VERSION 0.0.1)
 # JUCE의 안전 장치를 전역 수준에서 강제로 끔
 add_compile_definitions(JUCE_VST3_CAN_REPLACE_VST2=0)
 
 add_subdirectory(../JUCE bin/JUCE)
 
-juce_add_plugin(SimpleFilter
+juce_add_plugin(WeatherSound
     COMPANY_NAME "Jihoaudio"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
@@ -19,7 +19,7 @@ juce_add_plugin(SimpleFilter
 )
 
 # 소스 파일 등록 (.jucer에 있던 파일들)
-target_sources(SimpleFilter PRIVATE
+target_sources(WeatherSound PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginProcessor.h
     Source/PluginEditor.cpp
@@ -53,7 +53,7 @@ juce_add_binary_data(WebViewFiles
 )
 
 # 사용 중인 JUCE 모듈 링크
-target_link_libraries(SimpleFilter PRIVATE WebViewFiles
+target_link_libraries(WeatherSound PRIVATE WebViewFiles
     juce::juce_audio_utils
     juce::juce_audio_processors
     juce::juce_gui_extra
@@ -65,9 +65,9 @@ target_link_libraries(SimpleFilter PRIVATE WebViewFiles
 )
 
 # C++ 표준 설정
-target_compile_features(SimpleFilter PRIVATE cxx_std_20)
+target_compile_features(WeatherSound PRIVATE cxx_std_20)
 
 # 컴파일러 설정 (Clang 17의 엄격한 경고 해결)
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(SimpleFilter PRIVATE -Wno-error -Wno-reserved-identifier)
+    target_compile_options(WeatherSound PRIVATE -Wno-error -Wno-reserved-identifier)
 endif()
